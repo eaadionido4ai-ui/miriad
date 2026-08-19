@@ -1,0 +1,1964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MIRIAD | Working prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15211C; --paper:#F6F8F5; --surface:#FFFFFF;
+    --pine:#1E5B49; --pine-700:#164537;
+    --line:#E3E7E2; --line-2:#EDF0EC; --muted:#5F6E67; --muted-2:#8A968F;
+    --sev-red:#B23A2E; --sev-red-bg:#F7E7E4;
+    --sev-amber:#B07818; --sev-amber-bg:#F6EED9;
+    --sev-green:#2E7D5B; --sev-green-bg:#E4F1E9;
+    --sev-blue:#2C6E8F; --sev-blue-bg:#E3EEF3;
+    --radius:14px; --radius-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--ink);background:#06090f;-webkit-font-smoothing:antialiased;display:flex;justify-content:center;align-items:flex-start;min-height:100%}
+  .device{width:100%;max-width:440px;min-height:100vh;position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--paper);box-shadow:0 30px 90px rgba(0,0,0,.5)}
+  @media(min-width:480px){ .device{margin:24px 16px;min-height:calc(100vh - 48px);border-radius:28px;border:1px solid rgba(255,255,255,.05)} }
+
+  .device.dark-chrome{
+    --c-strip-bg:#0A101E; --c-strip-text:#93A2B8; --c-strip-accent:#E8A13A; --c-strip-q:#2FB8A6; --c-strip-grad:linear-gradient(90deg, rgba(228,87,46,.10), transparent 60%);
+    --c-head-bg:transparent; --c-head-line:transparent; --c-name:#EAF0F7; --c-sub:#93A2B8;
+    --c-logo-grad:linear-gradient(145deg,#E8A13A,#c47f1e); --c-logo-ink:#241703;
+    --c-pill-bg:rgba(255,255,255,.05); --c-pill-line:rgba(255,255,255,.14); --c-pill-text:#93A2B8; --c-pill-on-bg:#E8A13A; --c-pill-on-text:#241703;
+    --c-tab-bg:rgba(10,16,30,.92); --c-tab-line:rgba(255,255,255,.08); --c-tab-idle:#61708A; --c-tab-active:#E8A13A; --c-tab-report:#E4572E;
+    --device-bg:#0E1626;
+  }
+  .device.app-chrome{
+    --c-strip-bg:#164537; --c-strip-text:#dff0e8; --c-strip-accent:#7fd0a8; --c-strip-q:#bfe6d3; --c-strip-grad:none;
+    --c-head-bg:#FFFFFF; --c-head-line:var(--line); --c-name:var(--ink); --c-sub:var(--muted);
+    --c-logo-grad:var(--pine); --c-logo-ink:#fff;
+    --c-pill-bg:var(--line-2); --c-pill-line:transparent; --c-pill-text:var(--muted); --c-pill-on-bg:#FFFFFF; --c-pill-on-text:var(--pine-700);
+    --c-tab-bg:rgba(255,255,255,.95); --c-tab-line:var(--line); --c-tab-idle:var(--muted-2); --c-tab-active:var(--pine); --c-tab-report:var(--sev-red);
+    --device-bg:var(--paper);
+  }
+  .device{background:var(--device-bg);transition:background .4s ease}
+  .device.dark-chrome{background:radial-gradient(600px 300px at 80% -5%, rgba(232,161,58,.10), transparent),radial-gradient(500px 320px at -10% 12%, rgba(47,184,166,.08), transparent),#0E1626;}
+
+  .strip{display:flex;align-items:center;gap:9px;padding:8px 16px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.03em;border-bottom:1px solid var(--c-head-line);color:var(--c-strip-text);background:var(--c-strip-grad),var(--c-strip-bg);transition:.3s}
+  .strip .live{display:flex;align-items:center;gap:6px;color:var(--c-strip-accent);font-weight:500}
+  .strip .live .rd{width:6px;height:6px;border-radius:50%;background:var(--c-strip-accent);box-shadow:0 0 8px var(--c-strip-accent);animation:blink 1.8s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .strip .sp{opacity:.4}
+  .strip .q{margin-left:auto;color:var(--c-strip-q);font-weight:500}
+
+  header.bar{display:flex;align-items:center;gap:12px;padding:12px 16px;position:relative;z-index:5;background:var(--c-head-bg);border-bottom:1px solid var(--c-head-line);transition:.3s}
+  header.bar.hidden{display:none}
+  .brand{display:flex;align-items:center;gap:12px;cursor:pointer;flex:1;min-width:0}
+  .logo{width:36px;height:36px;border-radius:10px;background:var(--c-logo-grad);color:var(--c-logo-ink);display:grid;place-items:center;flex:none}
+  .logo svg{width:21px;height:21px}
+  .btext .n{font-weight:700;font-size:16px;line-height:1;color:var(--c-name)}
+  .btext .s{font-size:10px;color:var(--c-sub);margin-top:3px}
+  .whobtn{flex:none;display:flex;align-items:center;gap:8px;background:var(--c-pill-bg);border:1px solid var(--c-pill-line);border-radius:22px;padding:5px 11px 5px 5px;cursor:pointer}
+  .whobtn .wav{width:26px;height:26px;border-radius:50%;background:var(--pine);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;font-family:"IBM Plex Mono",monospace;flex:none}
+  .whobtn.officer .wav{background:#2C6E8F}
+  .whobtn .wtx{font-size:11px;font-weight:600;color:var(--c-pill-text);max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .navback{display:none;width:38px;height:38px;flex:none;border:1px solid var(--c-pill-line);background:var(--c-pill-bg);border-radius:11px;cursor:pointer;place-items:center;color:var(--c-name);transition:.16s}
+  .navback:hover{background:var(--c-pill-on-bg);color:var(--c-pill-on-text)}
+  .navback svg{width:19px;height:19px}
+  .navback:active{transform:scale(.94)}
+  .pagetitle{display:none;flex:1;min-width:0;font-weight:700;font-size:16px;letter-spacing:-.01em;color:var(--c-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar.sub .navback{display:grid}
+  .bar.sub .brand{display:none}
+  .bar.sub .pagetitle{display:block}
+
+  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:90px}
+  .scroll.noTabs{padding-bottom:20px}
+  .view{display:none}
+  .view.active{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* Dark auth + home */
+  .dk{color:#EAF0F7}
+  .hero{position:relative;padding:24px 22px 8px;text-align:center;overflow:hidden}
+  .radar-wrap{position:relative;width:186px;height:186px;margin:4px auto 2px}
+  .radar-wrap svg{position:absolute;inset:0}
+  .ring{fill:none;stroke:#E8A13A;opacity:.22;stroke-width:1}
+  @keyframes sweep{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .sweeparm{transform-origin:93px 93px;animation:sweep 4s linear infinite}
+  @keyframes pop{0%{r:2;opacity:0}30%{opacity:1}100%{r:8;opacity:0}}
+  .blip{fill:#E4572E}
+  .blip.a{animation:pop 3s ease-out infinite}.blip.b{animation:pop 3s ease-out infinite 1s}.blip.c{animation:pop 3s ease-out infinite 2s}
+  .core{fill:#E8A13A}
+  .kick{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:#E8A13A;letter-spacing:.14em;text-transform:uppercase}
+  .hero h1{font-family:"Space Grotesk",sans-serif;font-size:31px;line-height:1.05;letter-spacing:-.02em;margin:12px 0 10px;font-weight:700}
+  .hero h1 em{font-style:normal;color:#E8A13A}
+  .lede{font-size:13.5px;color:#93A2B8;line-height:1.55;max-width:32ch;margin:0 auto}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:16px}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;color:#EAF0F7;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);padding:5px 10px;border-radius:20px}
+  .chip.gold{color:#E8A13A;border-color:rgba(232,161,58,.4);background:rgba(232,161,58,.14)}
+  .sec{padding:22px;border-top:1px solid rgba(255,255,255,.08)}
+  .sec .lbl{display:flex;align-items:center;gap:9px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#93A2B8;margin-bottom:14px}
+  .sec .lbl .b{width:22px;height:2px;background:#E8A13A;border-radius:2px}
+  .abst{font-size:14px;line-height:1.64;color:#c4cfdd}
+  .abst p+p{margin-top:11px}
+  .abst b{color:#EAF0F7;font-weight:600}
+  .credit{display:flex;gap:13px;align-items:center;background:linear-gradient(135deg,#16223A,rgba(30,46,75,.6));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:16px}
+  .credit .av{width:46px;height:46px;border-radius:13px;background:linear-gradient(145deg,#2FB8A6,#1c8b7d);display:grid;place-items:center;font-family:"Space Grotesk",sans-serif;font-weight:700;color:#04211d;flex:none;font-size:16px}
+  .credit .who{font-weight:600;font-size:15px}
+  .credit .role{font-size:12px;color:#93A2B8;margin-top:3px;line-height:1.45}
+  .credit .flag{margin-top:8px;display:inline-flex;gap:6px;align-items:center;font-size:10.5px;font-weight:600;color:#E8A13A;background:rgba(232,161,58,.14);border:1px solid rgba(232,161,58,.3);padding:4px 9px;border-radius:20px}
+  .learn{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .lcard{background:#16223A;border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:16px;cursor:pointer;transition:.18s;min-height:116px;display:flex;flex-direction:column;gap:9px}
+  .lcard:hover{border-color:rgba(255,255,255,.16);transform:translateY(-2px)}
+  .lcard .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(91,141,239,.16);color:#5B8DEF}
+  .lcard .t{font-weight:600;font-size:13.5px}
+  .lcard .d{font-size:11px;color:#93A2B8;line-height:1.4}
+  .lcard .tag{margin-top:auto;font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.05em;color:#61708A}
+  .enter{padding:20px 22px 24px}
+  .startbtn{width:100%;border:0;font:inherit;font-weight:700;font-size:15.5px;padding:16px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#E8A13A,#cf881f);color:#241703;box-shadow:0 10px 26px rgba(232,161,58,.3);transition:.18s;font-family:"Space Grotesk",sans-serif}
+  .startbtn:hover{transform:translateY(-1px)}
+  .startbtn:disabled{opacity:.55;cursor:default;transform:none}
+  .startbtn svg{width:18px;height:18px}
+  .footer{padding:22px;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:#61708A;border-top:1px solid rgba(255,255,255,.08);line-height:1.8;letter-spacing:.03em}
+  .rolegrid{padding:6px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .rolecard{text-align:left;background:#16223A;border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:18px;cursor:pointer;display:flex;gap:14px;align-items:flex-start;transition:.18s;color:#EAF0F7;font:inherit}
+  .rolecard:hover{border-color:rgba(232,161,58,.5);transform:translateY(-2px)}
+  .rolecard .ric{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none}
+  .rolecard.r-raiser .ric{background:rgba(47,184,166,.16);color:#2FB8A6}
+  .rolecard.r-officer .ric{background:rgba(91,141,239,.16);color:#5B8DEF}
+  .rolecard .ric svg{width:23px;height:23px}
+  .rolecard .rt{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:16px}
+  .rolecard .rd{font-size:12px;color:#93A2B8;margin-top:4px;line-height:1.5}
+  .rolecard .rq{margin-top:8px;font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.05em;color:#61708A}
+  .dform{padding:6px 22px 22px}
+  .dfield{margin-bottom:16px}
+  .dfield label{display:block;font-size:12px;font-weight:600;margin-bottom:7px;color:#EAF0F7}
+  .dfield .dh{font-size:11px;color:#93A2B8;font-weight:400;margin-top:5px;line-height:1.45}
+  input.din{width:100%;border:1px solid rgba(255,255,255,.14);border-radius:var(--radius-sm);padding:13px;font:inherit;font-size:15px;background:rgba(255,255,255,.04);color:#EAF0F7}
+  input.din::placeholder{color:#61708A}
+  input.din:focus{outline:none;border-color:#E8A13A;box-shadow:0 0 0 3px rgba(232,161,58,.16)}
+  input.din.code{font-family:"IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;text-align:center;font-size:19px}
+  input.din.pin{font-family:"IBM Plex Mono",monospace;letter-spacing:.5em;text-align:center;font-size:22px;padding-left:.5em}
+  .dnote{display:flex;gap:9px;align-items:flex-start;background:rgba(232,161,58,.1);border:1px solid rgba(232,161,58,.28);border-radius:var(--radius-sm);padding:12px;font-size:11.5px;color:#e3c58f;line-height:1.5;margin-bottom:16px}
+  .dnote svg{width:15px;height:15px;color:#E8A13A;flex:none;margin-top:1px}
+  .dnote b{color:#E8A13A}
+  .demo{background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.18);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px}
+  .demo .dl{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.08em;color:#61708A;margin-bottom:8px}
+  .demo .dcodes{display:flex;flex-wrap:wrap;gap:7px}
+  .demo .dc{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:#2FB8A6;background:rgba(47,184,166,.12);border:1px solid rgba(47,184,166,.3);padding:4px 9px;border-radius:6px;cursor:pointer}
+  .dback{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#E8A13A;cursor:pointer;display:flex;align-items:center;gap:6px;padding:16px 22px 0}
+  .dback svg{width:16px;height:16px}
+  .verified{display:none;align-items:center;gap:9px;background:rgba(47,184,166,.12);border:1px solid rgba(47,184,166,.35);border-radius:var(--radius-sm);padding:12px;font-size:12.5px;color:#2FB8A6;margin-bottom:16px;font-weight:500}
+  .verified.show{display:flex}
+  .verified svg{width:16px;height:16px;flex:none}
+  .errline{display:none;font-size:12px;color:#F06E45;margin-top:8px;font-weight:500}
+  .errline.show{display:block}
+  .lockwrap{padding:40px 22px 22px;text-align:center}
+  .lockav{width:72px;height:72px;border-radius:24px;margin:0 auto 18px;display:grid;place-items:center;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:24px;background:linear-gradient(145deg,#2FB8A6,#1c8b7d);color:#04211d}
+  .lockav.officer{background:linear-gradient(145deg,#5B8DEF,#3765c4);color:#04122e}
+  .lockwrap h2{font-family:"Space Grotesk",sans-serif;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .lockwrap .lr{font-size:12.5px;color:#93A2B8;margin-top:6px}
+  .lockwrap .lrole{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#93A2B8}
+
+  /* Light app */
+  .screen-head{padding:18px 18px 8px}
+  .screen-head .kk{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--pine);letter-spacing:.05em;text-transform:uppercase}
+  .screen-head h2{font-size:23px;letter-spacing:-.02em;margin-top:4px;font-weight:700}
+  .screen-head p{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+  .head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+  .savedbtn{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:7px 12px;font:inherit;font-size:11.5px;font-weight:600;color:var(--pine-700);cursor:pointer;display:flex;align-items:center;gap:6px}
+  .savedbtn .cnt{background:var(--pine);color:#fff;border-radius:20px;font-size:10px;padding:1px 6px;font-family:"IBM Plex Mono",monospace}
+  .backbtn{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--pine);cursor:pointer;display:flex;align-items:center;gap:6px;padding:2px 0;margin-bottom:2px}
+  .backbtn svg{width:16px;height:16px}
+
+  .list{padding:6px 14px 14px;display:flex;flex-direction:column;gap:10px}
+  .row{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 14px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:.14s}
+  .row:hover{border-color:#cdd8d1}
+  .row .lead{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500}
+  .row .body{flex:1;min-width:0}
+  .row .body .top{display:flex;align-items:center;gap:8px}
+  .row .title{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .meta{font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+  .row .meta .mono{font-family:"IBM Plex Mono",monospace;font-size:11px}
+  .chev{color:var(--muted-2)}
+  .tier{font-size:10px;font-weight:600;padding:2.5px 8px;border-radius:20px;white-space:nowrap}
+  .t-red{background:var(--sev-red-bg);color:var(--sev-red)} .t-amber{background:var(--sev-amber-bg);color:var(--sev-amber)}
+  .t-green{background:var(--sev-green-bg);color:var(--sev-green)} .t-blue{background:var(--sev-blue-bg);color:var(--sev-blue)}
+  .t-grey{background:#eceeed;color:#6a756e}
+  .lead.l-red{background:var(--sev-red-bg);color:var(--sev-red)} .lead.l-amber{background:var(--sev-amber-bg);color:var(--sev-amber)}
+  .lead.l-green{background:var(--sev-green-bg);color:var(--sev-green)} .lead.l-blue{background:var(--sev-blue-bg);color:var(--sev-blue)}
+  .lead.l-pine{background:#e7f0eb;color:var(--pine)} .lead.l-grey{background:#eceeed;color:#6a756e}
+
+  .empty{margin:8px 18px;padding:34px 22px;text-align:center;border:1.5px dashed #c7d3cc;border-radius:var(--radius);background:#fbfcfb}
+  .empty svg{width:34px;height:34px;color:var(--pine);opacity:.5}
+  .empty .et{font-weight:600;font-size:14px;margin-top:12px}
+  .empty .es{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+  .primary{width:100%;border:0;background:var(--pine);color:#fff;font:inherit;font-weight:600;font-size:15px;padding:15px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:.16s}
+  .primary:hover{background:var(--pine-700)}
+  .primary svg{width:18px;height:18px}
+  .primary.danger{background:var(--sev-red)}
+  .primary.amber{background:var(--sev-amber)}
+  .ghost{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;font-size:14px;padding:13px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
+  .ghost:hover{border-color:#cdd8d1}
+  .ghost svg{width:17px;height:17px;color:var(--pine)}
+  .ghost:disabled{opacity:.5;cursor:default}
+  .ghost.warn{color:var(--sev-red)} .ghost.warn svg{color:var(--sev-red)}
+  .ghostdk{width:100%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#EAF0F7;font:inherit;font-weight:600;font-size:14px;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
+  .ghostdk:hover{background:rgba(255,255,255,.1)}
+  .ghostdk svg{width:17px;height:17px}
+
+  .form{padding:6px 18px 18px}
+  .field{margin-bottom:16px}
+  .field > label{display:block;font-size:12px;font-weight:600;color:var(--ink);margin-bottom:7px}
+  .field .hint{font-size:11px;color:var(--muted);font-weight:400;margin-left:4px}
+  .field .sub{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .segrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:7px}
+  .seg{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:11px 6px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;transition:.14s;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted)}
+  .seg svg{width:20px;height:20px;opacity:.75}
+  .seg.sel{border-color:var(--pine);background:#eef4f0;color:var(--pine-700);font-weight:600}
+  .seg.sel svg{opacity:1}
+  input.txt,textarea.txt{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;font:inherit;font-size:14px;background:var(--surface);color:var(--ink)}
+  input.txt:focus,textarea.txt:focus{outline:2px solid #bcd8cc;outline-offset:1px;border-color:var(--pine)}
+  textarea.txt{min-height:78px;resize:vertical}
+  select.txt{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;font:inherit;font-size:14px;background:var(--surface);color:var(--ink);-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231E5B49' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:38px}
+  select.txt:focus{outline:2px solid #bcd8cc;outline-offset:1px;border-color:var(--pine)}
+  .checkgrid{display:flex;flex-direction:column;gap:8px}
+  .check{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:.14s}
+  .check .box{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);flex:none;display:grid;place-items:center;transition:.14s}
+  .check.on{border-color:var(--pine);background:#eef4f0}
+  .check.on .box{background:var(--pine);border-color:var(--pine)}
+  .check .box svg{width:12px;height:12px;color:#fff;opacity:0}
+  .check.on .box svg{opacity:1}
+  .check .ctext{font-size:13px;font-weight:500}
+  .check .csub{font-size:11px;color:var(--muted);margin-top:2px}
+  .photo{border:1.5px dashed #c7d3cc;border-radius:var(--radius);padding:20px;text-align:center;background:#fbfcfb;cursor:pointer;transition:.16s}
+  .photo.has{border-style:solid;border-color:var(--pine);background:#eef4f0}
+  .photo svg{width:26px;height:26px;color:var(--pine);opacity:.75}
+  .photo.has svg{opacity:1}
+  .photo .pt{font-size:13px;font-weight:600;margin-top:8px}
+  .photo .ps{font-size:11px;color:var(--muted);margin-top:2px}
+  .geo{display:flex;align-items:center;gap:10px;background:var(--sev-green-bg);border:1px solid #cfe6da;border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--pine-700);font-weight:500}
+  .geo .mono{font-family:"IBM Plex Mono",monospace;margin-left:auto;font-size:11px}
+  .submit{width:100%;border:0;background:var(--sev-red);color:#fff;font:inherit;font-weight:600;font-size:15px;padding:15px;border-radius:var(--radius);cursor:pointer;margin-top:2px}
+  .submit.calm{background:var(--pine)}
+  .disease-flag{display:none;align-items:center;gap:9px;background:var(--sev-amber-bg);border:1px solid #e6d3a5;border-radius:var(--radius-sm);padding:11px 13px;font-size:12.5px;color:var(--sev-amber);margin-bottom:16px;font-weight:500}
+  .disease-flag.show{display:flex}
+  .disease-flag b{color:#8a5c10}
+  .pii-note{font-size:11px;color:var(--muted);margin-top:6px;display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+  .pii-note svg{width:13px;height:13px;color:var(--pine);flex:none;margin-top:1px}
+
+  .herd-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .herd-row select.txt{flex:1}
+  .herd-row input.txt{width:100px}
+  .herd-row .rm{flex:none;width:40px;height:44px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);color:var(--sev-red);cursor:pointer;display:grid;place-items:center}
+  .herd-row .rm svg{width:16px;height:16px}
+  .addrow{border:1px dashed #c7d3cc;background:#fbfcfb;color:var(--pine);font:inherit;font-weight:600;font-size:12.5px;padding:11px;border-radius:var(--radius-sm);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:2px}
+  .addrow svg{width:15px;height:15px}
+
+  .profile{margin:6px 18px 6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .profile .ptop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .profile .pname{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .profile .pid{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-top:2px}
+  .zone-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;white-space:nowrap}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line-2);font-size:13px}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:500;text-align:right}
+  .kv .v.mono{font-family:"IBM Plex Mono",monospace;font-size:12px}
+  .subhead{padding:14px 18px 6px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .subhead::before{content:"";width:14px;height:2px;background:var(--pine);border-radius:2px}
+  .herdchip-row{padding:2px 18px 6px;display:flex;flex-wrap:wrap;gap:8px}
+  .herdchip{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 12px;font-size:12.5px;font-weight:500;display:flex;gap:8px;align-items:center}
+  .herdchip .hc{font-family:"IBM Plex Mono",monospace;color:var(--pine-700);font-weight:600}
+
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:6px 14px 4px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+  .kpi .n{font-size:26px;font-weight:700;letter-spacing:-.02em;font-family:"IBM Plex Mono",monospace}
+  .kpi .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .kpi .delta{font-size:10.5px;font-weight:600;margin-top:6px;display:inline-flex;gap:3px;align-items:center}
+  .kpi .up{color:var(--sev-red)} .kpi .down{color:var(--sev-green)}
+  .kpi.alert{border-color:#e6d3a5;background:var(--sev-amber-bg)}
+  .kpi.alert .n{color:var(--sev-amber)}
+  .panel{margin:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px}
+  .panel .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .panel .ph .pt{font-size:13px;font-weight:600}
+  .panel .ph .pl{font-size:10.5px;color:var(--muted-2);font-family:"IBM Plex Mono",monospace}
+  .curve{display:flex;align-items:flex-end;gap:5px;height:96px}
+  .curve .b{flex:1;background:linear-gradient(180deg,#e88f82,#B23A2E);border-radius:4px 4px 2px 2px;min-height:5px}
+  .curve .b.q{background:linear-gradient(180deg,#e2c37f,#B07818)}
+  .xlab{display:flex;gap:5px;margin-top:7px}
+  .xlab span{flex:1;text-align:center;font-size:9px;color:var(--muted-2);font-family:"IBM Plex Mono",monospace}
+  .zmap{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:#eef3ef}
+  .zmap svg{display:block;width:100%;height:auto}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+  .legend span{font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .note{padding:4px 0 0;font-size:10.5px;color:var(--muted-2);font-family:"IBM Plex Mono",monospace}
+
+  .alert-card{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--sev-red);border-radius:var(--radius);padding:14px;margin:0 0 10px}
+  .alert-card.amber{border-left-color:var(--sev-amber)}
+  .alert-card .ah{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .alert-card .ah .atag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .alert-card .ah .atime{margin-left:auto;font-size:10.5px;color:var(--muted-2);font-family:"IBM Plex Mono",monospace}
+  .alert-card .amsg{font-size:13px;line-height:1.5;color:#2c3a34}
+  .alert-card .aloc{font-size:11.5px;color:var(--muted);margin-top:7px;display:flex;align-items:center;gap:5px}
+
+  .acct-hero{padding:22px 18px 8px;text-align:center}
+  .acct-hero .aav{width:66px;height:66px;border-radius:22px;margin:0 auto 14px;display:grid;place-items:center;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;background:var(--pine);color:#fff}
+  .acct-hero .aav.officer{background:#2C6E8F}
+  .acct-hero .an{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .acct-hero .ao{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .acct-hero .abadge{display:inline-flex;align-items:center;gap:6px;margin-top:11px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 11px;border-radius:20px;font-family:"IBM Plex Mono",monospace}
+  .secbox{margin:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px}
+  .secbox .sh{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:10px}
+  .secbox .sh svg{width:16px;height:16px;color:var(--pine)}
+  .secbox .sl{font-size:12px;color:var(--muted);line-height:1.55}
+
+  .warnbar{display:none;align-items:flex-start;gap:9px;margin:12px 18px 0;background:var(--sev-amber-bg);border:1px solid #e6d3a5;border-radius:var(--radius-sm);padding:12px;font-size:11.5px;color:#8a5c10;line-height:1.5}
+  .warnbar.show{display:flex}
+  .warnbar svg{width:15px;height:15px;flex:none;margin-top:1px}
+
+  /* Herd record additions */
+  .filterbar{display:flex;gap:7px;padding:6px 18px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .fchip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:7px 13px;font:inherit;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .fchip.on{background:var(--pine);border-color:var(--pine);color:#fff}
+  .cover-banner{margin:6px 18px 2px;border-radius:var(--radius);padding:14px;border:1px solid var(--line);background:var(--surface);display:flex;gap:12px;align-items:center}
+  .cover-banner.exp{background:var(--sev-amber-bg);border-color:#e6d3a5}
+  .cover-banner.none{background:#f4f6f4}
+  .cover-banner .cbi{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--sev-green-bg);color:var(--sev-green)}
+  .cover-banner.exp .cbi{background:#f0e0bb;color:var(--sev-amber)}
+  .cover-banner.none .cbi{background:#e6e9e7;color:var(--muted)}
+  .cover-banner .cbt{font-size:13px;font-weight:600}
+  .cover-banner .cbs{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .docbtn{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:14px;cursor:pointer;display:flex;gap:12px;align-items:center;text-align:left;font:inherit;margin-bottom:10px}
+  .docbtn:hover{border-color:#cdd8d1}
+  .docbtn .di{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--sev-blue-bg);color:var(--sev-blue)}
+  .docbtn .di svg{width:18px;height:18px}
+  .docbtn.urgent .di{background:var(--sev-red-bg);color:var(--sev-red)}
+  .docbtn .dt{font-size:13.5px;font-weight:600}
+  .docbtn .ds{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .deadline{display:flex;gap:10px;align-items:center;margin:6px 18px 10px;border-radius:var(--radius-sm);padding:12px;font-size:12.5px;font-weight:600;line-height:1.45}
+  .deadline.ok{background:var(--sev-green-bg);color:var(--sev-green);border:1px solid #cfe6da}
+  .deadline.warn{background:var(--sev-amber-bg);color:var(--sev-amber);border:1px solid #e6d3a5}
+  .deadline.late{background:var(--sev-red-bg);color:var(--sev-red);border:1px solid #ecc9c2}
+  .deadline svg{width:17px;height:17px;flex:none}
+  .cover-alert{margin:0 0 16px;border-radius:var(--radius-sm);padding:13px;font-size:12.5px;line-height:1.55;display:flex;gap:10px;align-items:flex-start}
+  .cover-alert.bad{background:var(--sev-red-bg);color:#8c2c22;border:1px solid #ecc9c2}
+  .cover-alert.good{background:var(--sev-green-bg);color:#206144;border:1px solid #cfe6da}
+  .cover-alert.warn{background:var(--sev-amber-bg);color:#8a5c10;border:1px solid #e6d3a5}
+  .cover-alert svg{width:16px;height:16px;flex:none;margin-top:1px}
+  .cover-alert b{font-weight:700}
+
+  /* Document preview */
+  .docpaper{margin:12px 14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;font-size:12.5px;line-height:1.6;color:#1a2620}
+  .docpaper h3{font-size:14px;font-weight:700;text-align:center;line-height:1.4;margin-bottom:2px}
+  .docpaper .dsub{text-align:center;font-size:11px;color:var(--muted);margin-bottom:14px}
+  .docpaper .drow{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line-2)}
+  .docpaper .drow .dk{flex:0 0 44%;color:var(--muted);font-size:11.5px}
+  .docpaper .drow .dv{flex:1;font-weight:600;font-size:12px}
+  .docpaper .dsec{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--pine);margin:16px 0 6px;font-weight:600}
+  .docpaper table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px}
+  .docpaper th{text-align:left;background:#f2f5f2;padding:6px;border:1px solid var(--line);font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  .docpaper td{padding:6px;border:1px solid var(--line)}
+  .docpaper .dfoot{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted);line-height:1.55}
+  .docpaper ol,.docpaper ul{margin:4px 0 0 18px}
+  .docpaper li{margin-bottom:4px}
+  .signline{margin-top:26px;display:flex;gap:20px}
+  .signline div{flex:1;border-top:1px solid #1a2620;padding-top:5px;font-size:10.5px;color:var(--muted);text-align:center}
+
+  #printdoc{display:none}
+  @media print{
+    body{background:#fff;display:block}
+    .device{display:none!important}
+    #printdoc{display:block!important;padding:0;font-family:"IBM Plex Sans",sans-serif;color:#000;font-size:12px;line-height:1.55}
+    #printdoc .docpaper{margin:0;border:0;border-radius:0;padding:0}
+    @page{margin:16mm}
+  }
+
+  .modal{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(10,16,30,.55)}
+  .modal.show{display:flex}
+  .modal .mcard{background:var(--surface);border-radius:18px;padding:22px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:fade .22s ease}
+  .modal .mt{font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+  .modal .mb{font-size:13px;color:var(--muted);line-height:1.55;margin-top:9px}
+  .modal .mrow{display:flex;gap:9px;margin-top:20px}
+  .modal .mrow button{flex:1;border-radius:12px;padding:13px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+  .modal .mrow button:hover{border-color:#cdd8d1}
+  .modal .mrow button.danger{background:var(--sev-red);color:#fff;border-color:var(--sev-red)}
+
+  .tabbar{position:absolute;left:0;right:0;bottom:0;background:var(--c-tab-bg);backdrop-filter:blur(12px);border-top:1px solid var(--c-tab-line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:20;transition:.3s}
+  .tabbar.hidden{display:none}
+  .tab{flex:1;border:0;background:transparent;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;color:var(--c-tab-idle);transition:.14s}
+  .tab svg{width:22px;height:22px}
+  .tab .tl{font-size:9.5px;font-weight:600}
+  .tab.on{color:var(--c-tab-active)}
+  .tab.report-tab.on{color:var(--c-tab-report)}
+
+  .toast{position:absolute;left:16px;right:16px;bottom:98px;background:var(--ink);color:#eaf3ee;padding:13px 15px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;z-index:40;opacity:0;transform:translateY(10px);pointer-events:none;transition:.24s;box-shadow:0 12px 30px rgba(0,0,0,.28)}
+  .toast.show{opacity:1;transform:none}
+  .toast svg{width:18px;height:18px;color:#7fd0a8;flex:none}
+
+  @media (prefers-reduced-motion: reduce){ .sweeparm,.blip,.strip .rd{animation:none} }
+</style>
+</head>
+<body>
+<div id="printdoc"></div>
+<div class="device dark-chrome" id="device">
+
+  <div class="strip">
+    <span class="live"><span class="rd"></span><span id="net">OFFLINE</span></span>
+    <span class="sp">/</span><span id="vaultlabel">VAULT LOCKED</span>
+    <span class="q" id="q">All synced</span>
+  </div>
+
+  <header class="bar hidden" id="topbar">
+    <button class="navback" id="navback" onclick="back()" aria-label="Go back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="brand" onclick="go('home')">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/><circle cx="12" cy="11" r="2.4"/></svg></div>
+      <div class="btext"><div class="n">MIRIAD</div><div class="s" id="brandsub">Animal disease field surveillance</div></div>
+    </div>
+    <div class="pagetitle" id="pagetitle"></div>
+    <button class="whobtn" id="whobtn" onclick="go('account')"><span class="wav" id="whoav">?</span><span class="wtx" id="whotx">Account</span></button>
+  </header>
+
+  <div class="scroll" id="scroll">
+
+    <!-- WELCOME -->
+    <div class="view active dk" id="v-welcome">
+      <div class="hero">
+        <div class="radar-wrap">
+          <svg viewBox="0 0 186 186" aria-hidden="true">
+            <circle class="ring" cx="93" cy="93" r="86"/><circle class="ring" cx="93" cy="93" r="63"/><circle class="ring" cx="93" cy="93" r="40"/><circle class="ring" cx="93" cy="93" r="18"/>
+            <line x1="93" y1="7" x2="93" y2="179" stroke="rgba(232,161,58,.12)"/><line x1="7" y1="93" x2="179" y2="93" stroke="rgba(232,161,58,.12)"/>
+            <g class="sweeparm"><defs><linearGradient id="sw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(232,161,58,.5)"/><stop offset="1" stop-color="transparent"/></linearGradient></defs><path d="M93 93 L93 7 A86 86 0 0 1 177 70 Z" fill="url(#sw)"/></g>
+            <circle class="blip a" cx="133" cy="58" r="4"/><circle class="blip b" cx="62" cy="124" r="4"/><circle class="blip c" cx="124" cy="133" r="4"/>
+            <circle class="core" cx="93" cy="93" r="5"/>
+          </svg>
+        </div>
+        <div class="kick">Monitoring &middot; Incident reporting</div>
+        <h1>See the <em>outbreak</em><br>before it spreads.</h1>
+        <p class="lede">MIRIAD is Monitoring system and Incident / outbreak Reporting for Infectious Animal Diseases. Set up your account to begin.</p>
+      </div>
+      <div class="sec" style="border:0;padding-bottom:4px"><div class="lbl"><span class="b"></span>Choose your role</div></div>
+      <div class="rolegrid">
+        <button class="rolecard r-raiser" onclick="go('signup-raiser')">
+          <span class="ric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13c0-3 2-5 5-5 1-2 5-2 6 0 3 0 5 2 5 5v3H4z"/><circle cx="9" cy="11" r="1"/></svg></span>
+          <span><span class="rt">I raise animals</span><span class="rd">Keep a herd record, track PCIC insurance, report sick animals, and file a Notice of Loss.</span><span class="rq">NAME AND 4-DIGIT PIN</span></span>
+        </button>
+        <button class="rolecard r-officer" onclick="go('signup-officer')">
+          <span class="ric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span><span class="rt">I am an animal health officer</span><span class="rd">Full registry, case register, outbreak zoning, and situation reports for your area.</span><span class="rq">ENROLLMENT CODE REQUIRED</span></span>
+        </button>
+      </div>
+      <div class="footer">MIRIAD WORKING PROTOTYPE &middot; ACCOUNTS AND VAULT<br>DATA IS ENCRYPTED AND STAYS ON THIS DEVICE</div>
+    </div>
+
+    <!-- RAISER SIGNUP -->
+    <div class="view dk" id="v-signup-raiser">
+      <button class="dback" onclick="go('welcome')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+      <div class="hero" style="padding-top:14px;text-align:left">
+        <div class="kick">Raiser account</div><h1 style="font-size:27px">Set up your<br>account.</h1>
+        <p class="lede" style="margin:0">Your PIN unlocks this app and protects your records on this device.</p>
+      </div>
+      <div class="dform">
+        <div class="dfield"><label>Your name</label><input class="din" id="sr-name" type="text" placeholder="e.g. Ana Mendoza" autocomplete="off"></div>
+        <div class="dfield"><label>Your farm name</label><input class="din" id="sr-farm" type="text" placeholder="e.g. Mendoza Farm" autocomplete="off"></div>
+        <div class="dfield"><label>Complete address</label><input class="din" id="sr-addr" type="text" placeholder="Purok, Barangay, Municipality" autocomplete="off"><div class="dh">PCIC needs the address of the assured on every claim document.</div></div>
+        <div class="dfield"><label>RSBSA number <span style="color:#61708A;font-weight:400">optional</span></label><input class="din" id="sr-rsbsa" type="text" placeholder="If you are RSBSA registered" autocomplete="off"><div class="dh">RSBSA registration is what qualifies a raiser for fully subsidised PCIC premiums.</div></div>
+        <div class="dfield"><label>Create a 4-digit PIN</label><input class="din pin" id="sr-pin" type="password" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="new-password"></div>
+        <div class="dfield"><label>Confirm your PIN</label><input class="din pin" id="sr-pin2" type="password" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="new-password"><div class="errline" id="sr-err"></div></div>
+        <div class="dnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span><b>There is no password reset.</b> Your PIN is the key to your encrypted records. If you forget it, the data on this device cannot be recovered.</span></div>
+        <button class="startbtn" id="sr-btn" onclick="createRaiser()">Create account<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+
+    <!-- OFFICER SIGNUP -->
+    <div class="view dk" id="v-signup-officer">
+      <button class="dback" onclick="go('welcome')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+      <div class="hero" style="padding-top:14px;text-align:left">
+        <div class="kick">Officer enrollment</div><h1 style="font-size:27px">Enter your<br>enrollment code.</h1>
+        <p class="lede" style="margin:0">Officer accounts are issued by a veterinary office. Enter the code you were given.</p>
+      </div>
+      <div class="dform">
+        <div class="dfield"><label>Enrollment code</label><input class="din code" id="so-code" type="text" maxlength="9" placeholder="XXXX-0000" autocomplete="off" oninput="onCodeInput()"><div class="errline" id="so-err"></div></div>
+        <div class="verified" id="so-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg><span id="so-office"></span></div>
+        <div class="demo"><div class="dl">DEMO CODES FOR TESTING, TAP TO USE</div><div class="dcodes">
+          <span class="dc" onclick="useCode('UPRI-2473')">UPRI-2473</span><span class="dc" onclick="useCode('LGU1-1057')">LGU1-1057</span>
+          <span class="dc" onclick="useCode('PROV-3314')">PROV-3314</span><span class="dc" onclick="useCode('BAI1-9024')">BAI1-9024</span>
+        </div></div>
+        <div class="dfield"><label>Your name</label><input class="din" id="so-name" type="text" placeholder="e.g. Dr. Luis Ramos" autocomplete="off"></div>
+        <div class="dfield"><label>Create a passphrase</label><input class="din" id="so-pass" type="password" placeholder="At least 8 characters" autocomplete="new-password"><div class="dh">Officers hold owner names and the whole area registry, so this is a passphrase rather than a 4-digit PIN.</div></div>
+        <div class="dfield"><label>Confirm passphrase</label><input class="din" id="so-pass2" type="password" placeholder="Repeat it" autocomplete="new-password"><div class="errline" id="so-err2"></div></div>
+        <div class="dnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span><b>Prototype limitation.</b> With no server, this code is checked inside the app itself, so it records which office issued it but cannot prove authority on its own.</span></div>
+        <button class="startbtn" id="so-btn" onclick="createOfficer()">Create officer account<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+
+    <!-- ACCOUNT PICKER -->
+    <div class="view dk" id="v-accounts">
+      <div class="hero" style="padding-top:38px">
+        <div class="kick">This device</div>
+        <h1 style="font-size:28px">Who is using<br>MIRIAD?</h1>
+        <p class="lede">Each account keeps its own encrypted records. One account cannot read the other.</p>
+      </div>
+      <div class="rolegrid" id="acct-picker"></div>
+      <div style="padding:0 22px 30px">
+        <button class="ghostdk" onclick="go('welcome')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add another account</button>
+      </div>
+    </div>
+
+    <!-- LOCK -->
+    <div class="view dk" id="v-lock">
+      <div class="lockwrap">
+        <div class="lockav" id="lk-av">?</div><h2 id="lk-name">Welcome back</h2>
+        <div class="lr" id="lk-sub">Enter your PIN to unlock</div><div class="lrole" id="lk-role">RAISER</div>
+      </div>
+      <div class="dform">
+        <div class="dfield"><input class="din pin" id="lk-input" type="password" inputmode="numeric" maxlength="4" placeholder="0000" onkeydown="if(event.key==='Enter')unlock()"><div class="errline" id="lk-err"></div></div>
+        <button class="startbtn" id="lk-btn" onclick="unlock()">Unlock<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <div style="text-align:center;margin-top:18px;display:flex;flex-direction:column;gap:12px">
+          <button class="dback" style="padding:0;margin:0 auto;color:#E8A13A;font-size:12.5px" onclick="switchAccount()">Use a different account</button>
+          <button class="dback" style="padding:0;margin:0 auto;color:#61708A;font-size:12px" onclick="confirmReset()">Reset this device and start over</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div class="view dk" id="v-home">
+      <div class="hero">
+        <div class="kick">Monitoring &middot; Incident reporting</div>
+        <h1>See the <em>outbreak</em><br>before it spreads.</h1>
+        <p class="lede">MIRIAD is Monitoring system and Incident / outbreak Reporting for Infectious Animal Diseases. Built for raisers and animal health officers to detect, log, and contain, even with no signal.</p>
+        <div class="chips"><span class="chip gold">OFFLINE-FIRST</span><span class="chip">ASF</span><span class="chip">AI</span><span class="chip">FMD</span><span class="chip">RABIES</span><span class="chip">LSD</span><span class="chip gold">PCIC READY</span></div>
+      </div>
+      <div class="sec">
+        <div class="lbl"><span class="b"></span>Abstract</div>
+        <div class="abst">
+          <p>When an animal disease hits, the first hours decide everything. But field reporting in the Philippines still stalls where signal drops, and the raisers and officers closest to the animals are the ones left without tools.</p>
+          <p>MIRIAD puts <b>outbreak response in the pocket</b>. Officers run premises registry, containment zoning, and situation reports. Raisers keep a herd record that captures each animal the way PCIC livestock insurance requires it, tracks policy expiry and animal status, and turns a mortality into a <b>Notice of Loss</b> inside the ten day window the policy allows. Everything is encrypted on the device and syncs when a connection appears.</p>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="lbl"><span class="b"></span>Lead developer</div>
+        <div class="credit"><div class="av">EA</div>
+          <div><div class="who">Edward Andrew A. Dionido</div><div class="role">Concept, design, and development lead. UP Resilience Institute, Resilient Campus Program.</div>
+          <span class="flag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Built with AI assistance</span></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="lbl"><span class="b"></span>Learn the app</div>
+        <div class="learn">
+          <div class="lcard" onclick="toast('User manual is being written. Placeholder for now.')"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h9v18H6a2 2 0 0 1-2-2z"/><path d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M8 7h4M8 11h4"/></svg></div><div class="t">User manual</div><div class="d">Every screen and workflow, step by step.</div><div class="tag">PLACEHOLDER</div></div>
+          <div class="lcard" onclick="toast('Walkthrough video coming soon. Placeholder for now.')"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg></div><div class="t">Walkthrough</div><div class="d">A short guided tour of a full report.</div><div class="tag">PLACEHOLDER</div></div>
+        </div>
+      </div>
+      <div class="enter"><button class="startbtn" onclick="enterApp()">Continue to MIRIAD<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+      <div class="footer">MIRIAD WORKING PROTOTYPE &middot; HERD RECORD &middot; PCIC NOTICE OF LOSS<br>AES-GCM VAULT &middot; DATA STAYS ON THIS DEVICE</div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="view" id="v-account">
+      <div class="acct-hero"><div class="aav" id="ac-av">?</div><div class="an" id="ac-name">Account</div><div class="ao" id="ac-office"></div><span class="abadge" id="ac-badge"></span></div>
+      <div class="secbox"><div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Vault</div><div class="sl" id="ac-vault"></div></div>
+      <div class="secbox"><div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z"/></svg>What this account can do</div><div class="sl" id="ac-perms"></div></div>
+      <div id="ac-raiserbox"></div>
+      <div style="padding:4px 18px 10px"><button class="ghost" onclick="switchAccount()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16H3l4-4M3 16h14a4 4 0 0 0 0-8h-1"/><path d="M17 8h4l-4 4"/></svg>Switch or add an account</button></div>
+      <div style="padding:0 18px 10px"><button class="ghost" onclick="lockNow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Lock now</button></div>
+      <div style="padding:0 18px 24px"><button class="ghost warn" onclick="confirmReset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12M9 7V5h6v2M8 7l1 13h6l1-13"/></svg>Reset this device</button></div>
+    </div>
+
+    <!-- ============ HERD RECORD ============ -->
+    <div class="view" id="v-herd">
+      <div class="warnbar" id="cryptowarn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span>This browser did not provide the encryption API, so records are being saved without encryption. Open MIRIAD over https for the vault to work.</span></div>
+      <div class="screen-head"><div class="kk">Your farm</div><h2 id="herd-title">My animals</h2><p>Every animal, its status, and its PCIC insurance cover.</p></div>
+      <div class="kpis" id="herd-kpis"></div>
+      <div id="herd-banner"></div>
+      <div class="filterbar" id="herd-filters"></div>
+      <div id="herd-body"></div>
+      <div style="padding:4px 18px 18px"><button class="primary" onclick="openAnimalForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add an animal or batch</button></div>
+    </div>
+
+    <!-- ANIMAL FORM -->
+    <div class="view" id="v-animal-form">
+      <div class="screen-head">
+        <button class="backbtn" onclick="back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Cancel</button>
+        <div class="kk">Animal record</div><h2>Add an animal</h2><p>These are the details PCIC asks for on a livestock mortality application.</p>
+      </div>
+      <div class="form">
+        <div class="field"><label>Species</label><select class="txt" id="af-species" onchange="onSpeciesChange()"></select></div>
+        <div class="field"><label>Purpose<span class="hint">Changes the insurable age and cover</span></label><select class="txt" id="af-purpose" onchange="checkAge()"></select></div>
+        <div class="two">
+          <div class="field"><label>Breed</label><input class="txt" id="af-breed" type="text" placeholder="e.g. Landrace"></div>
+          <div class="field"><label>Sex</label><select class="txt" id="af-sex"><option>Female</option><option>Male</option><option>Mixed batch</option></select></div>
+        </div>
+        <div class="two">
+          <div class="field"><label>Head count</label><input class="txt" id="af-count" type="number" inputmode="numeric" value="1" min="1"></div>
+          <div class="field"><label>Date of birth</label><input class="txt" id="af-dob" type="date" onchange="checkAge()"></div>
+        </div>
+        <div id="af-agecheck"></div>
+        <div class="field">
+          <label>Identification<span class="hint">Required on claim photos</span></label>
+          <div class="two">
+            <select class="txt" id="af-idtype"><option>Ear tag</option><option>Ear notch</option><option>Brand</option><option>Tattoo</option><option>Microchip</option><option>Batch label</option></select>
+            <input class="txt" id="af-idval" type="text" placeholder="Number or mark">
+          </div>
+          <div class="sub">PCIC requires photographs of the dead animal clearly showing eartags, earnotch, brand, or tattoo. Without a mark the claim is hard to prove.</div>
+        </div>
+        <div class="field"><label>Colour and distinguishing marks</label><input class="txt" id="af-marks" type="text" placeholder="e.g. white with black patch on left flank"></div>
+        <div class="two">
+          <div class="field"><label>Date acquired</label><input class="txt" id="af-acq" type="date"></div>
+          <div class="field"><label>Value per head (PHP)</label><input class="txt" id="af-value" type="number" inputmode="numeric" placeholder="e.g. 12000"></div>
+        </div>
+        <button class="primary" onclick="saveAnimal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg>Save animal</button>
+      </div>
+    </div>
+
+    <!-- ANIMAL DETAIL -->
+    <div class="view" id="v-animal-detail"><div id="animal-detail-body"></div></div>
+
+    <!-- DISPOSITION FORM -->
+    <div class="view" id="v-disposition">
+      <div class="screen-head">
+        <button class="backbtn" onclick="back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Cancel</button>
+        <div class="kk">Update record</div><h2>Animal status</h2><p id="disp-sub">What happened to this animal?</p>
+      </div>
+      <div class="form">
+        <div class="field"><label>Animal status</label><select class="txt" id="dp-status" onchange="onDispChange()"></select></div>
+        <div class="field"><label>Date</label><input class="txt" id="dp-date" type="date"></div>
+        <div class="field" id="dp-pricewrap"><label>Sale price (PHP)</label><input class="txt" id="dp-price" type="number" inputmode="numeric" placeholder="Total received"></div>
+        <div class="field" id="dp-causewrap"><label>Cause of death</label><input class="txt" id="dp-cause" type="text" placeholder="e.g. suspected ASF"></div>
+        <div id="dp-cover"></div>
+        <div class="field"><label>Notes</label><textarea class="txt" id="dp-note" placeholder="Anything worth recording"></textarea></div>
+        <button class="primary" id="dp-save" onclick="saveDisposition()">Save status</button>
+      </div>
+    </div>
+
+    <!-- ============ COVERAGE ============ -->
+    <div class="view" id="v-coverage">
+      <div class="screen-head"><div class="kk">PCIC livestock insurance</div><h2>Coverage</h2><p>Policies, expiry, and the documents a mortality claim needs.</p></div>
+      <div id="coverage-body"></div>
+      <div class="subhead">Documents</div>
+      <div style="padding:2px 18px 18px">
+        <button class="docbtn" onclick="genInventory()"><span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l4 4v14H5V3z"/><path d="M8 12h8M8 16h5"/></svg></span><span><span class="dt">Livestock inventory and coverage report</span><span class="ds">Full herd record with sums insured, expiry, and animal status. For PCIC application or renewal.</span></span></button>
+        <button class="docbtn urgent" onclick="startNoticeOfLoss()"><span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><span><span class="dt">Notice of Loss</span><span class="ds">File within 10 calendar days of the death of an insured animal.</span></span></button>
+        <button class="docbtn" onclick="genChecklist()"><span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="3" y="4" width="18" height="17" rx="2"/></svg></span><span><span class="dt">Claim document checklist</span><span class="ds">The papers due within 30 calendar days of the death.</span></span></button>
+      </div>
+      <div class="subhead">Notices filed</div>
+      <div id="nl-list"></div>
+      <div style="padding:4px 18px 18px"><button class="primary" onclick="openPolicyForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Record a policy</button></div>
+    </div>
+
+    <!-- POLICY FORM -->
+    <div class="view" id="v-policy-form">
+      <div class="screen-head">
+        <button class="backbtn" onclick="back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Cancel</button>
+        <div class="kk">PCIC policy</div><h2>Record a policy</h2><p>Enter the policy as issued by your PCIC regional office.</p>
+      </div>
+      <div class="form">
+        <div class="field"><label>Policy number</label><input class="txt" id="pl-no" type="text" placeholder="As printed on the policy"></div>
+        <div class="field"><label>Type of cover</label><select class="txt" id="pl-cover">
+          <option value="non_commercial">Non-commercial mortality</option>
+          <option value="commercial">Commercial mortality</option>
+          <option value="dispersal">Special cover, livestock dispersal</option>
+          <option value="game">Special cover, game fowls and animals</option>
+        </select><div class="sub">Non-commercial covers smaller herds. Commercial applies at larger head counts or a total sum insured of P110,000 and above.</div></div>
+        <div class="field"><label>Animals covered<span class="hint">Tap to include</span></label><div class="checkgrid" id="pl-animals"></div></div>
+        <div class="two">
+          <div class="field"><label>Total sum insured (PHP)</label><input class="txt" id="pl-si" type="number" inputmode="numeric" placeholder="e.g. 60000"></div>
+          <div class="field"><label>Premium paid (PHP)</label><input class="txt" id="pl-prem" type="number" inputmode="numeric" placeholder="e.g. 3300"></div>
+        </div>
+        <div id="pl-estimate"></div>
+        <div class="two">
+          <div class="field"><label>Effective date</label><input class="txt" id="pl-start" type="date"></div>
+          <div class="field"><label>Expiry date</label><input class="txt" id="pl-end" type="date"></div>
+        </div>
+        <div class="field"><label>Deductible (percent of sum insured)</label><input class="txt" id="pl-ded" type="number" inputmode="numeric" placeholder="e.g. 10"><div class="sub">PCIC deductibles run from 10 to 20 percent on non-commercial cover and up to 30 percent on commercial cover, reckoned per farm per event.</div></div>
+        <div class="field"><div class="check" id="pl-vet" onclick="chk(this)"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg></div><div><div class="ctext">Veterinary Health Certificate on file</div><div class="csub">Required at application, and required again for extended coverage of epidemic diseases</div></div></div></div>
+        <button class="primary" onclick="savePolicy()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg>Save policy</button>
+      </div>
+    </div>
+
+    <!-- NOTICE OF LOSS -->
+    <div class="view" id="v-nl-form">
+      <div class="screen-head">
+        <button class="backbtn" onclick="back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Cancel</button>
+        <div class="kk">PCIC claim step 1</div><h2>Notice of Loss</h2><p>Send this to your PCIC regional office within 10 calendar days of the death.</p>
+      </div>
+      <div id="nl-deadline"></div>
+      <div class="form">
+        <div class="field"><label>Which animal died?</label><select class="txt" id="nl-animal" onchange="onNlAnimal()"></select></div>
+        <div class="field"><label>Policy</label><select class="txt" id="nl-policy"></select></div>
+        <div class="two">
+          <div class="field"><label>Date of death</label><input class="txt" id="nl-date" type="date" onchange="onNlDate()"></div>
+          <div class="field"><label>Head lost</label><input class="txt" id="nl-count" type="number" inputmode="numeric" value="1" min="1"></div>
+        </div>
+        <div class="field"><label>Cause of death</label><input class="txt" id="nl-cause" type="text" placeholder="e.g. suspected African Swine Fever" oninput="onNlCause()"></div>
+        <div id="nl-cover"></div>
+        <div class="field"><label>Link a MIRIAD disease report<span class="hint">Optional but strong evidence</span></label><select class="txt" id="nl-report"></select><div class="sub">A linked report carries the date, signs, location, and photo already captured in the field.</div></div>
+        <button class="primary danger" onclick="saveNoticeOfLoss()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l4 4v14H5V3z"/><path d="M8 12h8M8 16h5"/></svg>Generate Notice of Loss</button>
+      </div>
+    </div>
+
+    <!-- DOCUMENT VIEWER -->
+    <div class="view" id="v-docview">
+      <div id="docview-body"></div>
+      <div style="padding:6px 18px 20px">
+        <button class="primary" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2"/><rect x="8" y="15" width="8" height="6"/></svg>Print or save as PDF</button>
+        <div style="height:10px"></div>
+        <button class="ghost" onclick="copyDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy as text for SMS or email</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD (officer) -->
+    <div class="view" id="v-dashboard">
+      <div class="screen-head"><div class="kk">Situation overview</div><h2>Dashboard</h2><p>Province view, last 14 days. Sample baseline plus your reports.</p></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <div class="ph"><span class="pt">Epidemic curve</span><span class="pl">CASES / DAY</span></div>
+        <div class="curve" id="curve"></div>
+        <div class="xlab"><span>D1</span><span>D3</span><span>D5</span><span>D7</span><span>D9</span><span>D11</span><span>D14</span></div>
+        <div class="legend"><span><i style="background:#B23A2E"></i>Confirmed</span><span><i style="background:#B07818"></i>Suspect</span></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="pt">Outbreak zones</span><span class="pl">BRGY LEVEL</span></div>
+        <div class="zmap">
+          <svg viewBox="0 0 320 190" role="img" aria-label="Stylised map with outbreak zones">
+            <rect width="320" height="190" fill="#eef3ef"/><path d="M0 120 Q80 90 150 115 T320 100 V190 H0 Z" fill="#e2ebe4"/>
+            <path d="M30 20 L120 30 L140 90 L60 110 L20 70 Z" fill="#dfe8e1" stroke="#cdd8d1"/>
+            <path d="M140 90 L120 30 L210 25 L250 80 L200 130 Z" fill="#dfe8e1" stroke="#cdd8d1"/>
+            <path d="M250 80 L210 25 L300 40 L305 120 L200 130 Z" fill="#dfe8e1" stroke="#cdd8d1"/>
+            <circle cx="95" cy="72" r="30" fill="rgba(178,58,46,.10)" stroke="rgba(178,58,46,.35)" stroke-dasharray="4 3"/>
+            <circle cx="95" cy="72" r="17" fill="rgba(178,58,46,.20)" stroke="rgba(178,58,46,.5)"/><circle cx="95" cy="72" r="5" fill="#B23A2E"/>
+            <circle cx="215" cy="80" r="24" fill="rgba(176,120,24,.10)" stroke="rgba(176,120,24,.35)" stroke-dasharray="4 3"/><circle cx="215" cy="80" r="5" fill="#B07818"/>
+            <circle cx="70" cy="90" r="3.5" fill="#B23A2E"/><circle cx="110" cy="58" r="3.5" fill="#B23A2E"/><circle cx="230" cy="70" r="3.5" fill="#B07818"/><circle cx="205" cy="95" r="3.5" fill="#B07818"/><circle cx="270" cy="60" r="3.5" fill="#2E7D5B"/>
+          </svg>
+        </div>
+        <div class="legend"><span><i style="background:rgba(178,58,46,.6)"></i>Red zone</span><span><i style="background:rgba(176,120,24,.6)"></i>Buffer</span><span><i style="background:#2E7D5B"></i>Cleared</span></div>
+        <div class="note">LIVE BASEMAP WIRES IN A LATER PASS</div>
+      </div>
+      <div class="screen-head"><div class="kk">Needs attention</div></div>
+      <div class="list" id="attention"></div>
+    </div>
+
+    <!-- REGISTRY -->
+    <div class="view" id="v-registry">
+      <div class="screen-head"><div class="kk">Premises and herds</div><h2>Registry</h2><p>Registered farms in your area. Tap one to see its herds and case history.</p></div>
+      <div id="registry-body"></div>
+      <div style="padding:4px 18px 18px"><button class="primary" onclick="openPremisesForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Register a premises</button></div>
+    </div>
+
+    <div class="view" id="v-premises-detail"><div id="premises-detail-body"></div></div>
+
+    <div class="view" id="v-premises-form">
+      <div class="screen-head">
+        <button class="backbtn" onclick="back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Cancel</button>
+        <div class="kk">New premises</div><h2>Register a premises</h2><p>Record a farm once, then link every case to it.</p>
+      </div>
+      <div class="form">
+        <div class="field"><label>Farm name</label><input class="txt" id="pf-name" type="text" placeholder="e.g. Dela Cruz Piggery"></div>
+        <div class="field"><label>Owner or caretaker</label><input class="txt" id="pf-owner" type="text" placeholder="e.g. J. Dela Cruz">
+          <div class="pii-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>This is personal information. It is encrypted on this device and protected under the Data Privacy Act.</div>
+        </div>
+        <div class="field"><label>Barangay</label><input class="txt" id="pf-brgy" type="text" placeholder="e.g. San Isidro"></div>
+        <div class="field"><label>Animals kept<span class="hint">Add each type and how many</span></label><div id="herd-rows"></div>
+          <button class="addrow" onclick="addHerdRow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add another animal type</button>
+        </div>
+        <div class="field"><label>Location</label><div class="geo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/><circle cx="12" cy="11" r="2.2"/></svg>Captured from device<span class="mono">14.6772, 121.0451</span></div></div>
+        <button class="primary" onclick="savePremises()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg>Save premises</button>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="view" id="v-report">
+      <div class="screen-head">
+        <div class="head-row"><div><div class="kk">Suspected case</div><h2 id="rep-title">Report a sick animal</h2></div>
+        <button class="savedbtn" onclick="go('reports')">Saved <span class="cnt" id="saved-cnt">0</span></button></div>
+        <p id="rep-sub">Fill what you can. It saves on this device and syncs later.</p>
+      </div>
+      <div class="form">
+        <div class="disease-flag" id="disease-flag"></div>
+        <div class="field"><label>Which farm is this?<span class="hint" id="farm-hint">Pick the farm you are reporting about</span></label><select class="txt" id="rep-farm"></select></div>
+        <div class="field"><label>What kind of animal?</label>
+          <div class="segrow" id="species-row">
+            <div class="seg sel" data-val="Swine" onclick="pickSpecies(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 13c0-3 2-5 5-5 1-2 5-2 6 0 3 0 5 2 5 5v3H4z"/><circle cx="9" cy="11" r="1"/></svg>Swine</div>
+            <div class="seg" data-val="Poultry" onclick="pickSpecies(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5l3 3-1 5H10L9 8z"/><path d="M9 8L6 6M15 8l3-2"/></svg>Poultry</div>
+            <div class="seg" data-val="Cattle" onclick="pickSpecies(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 12h12v4H6z"/><path d="M8 12V8h8v4M9 16v2M15 16v2"/></svg>Cattle</div>
+            <div class="seg" data-val="Other" onclick="pickSpecies(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Other</div>
+          </div>
+        </div>
+        <div class="field"><label>What are you seeing?<span class="hint">Tap all that apply</span></label>
+          <div class="checkgrid" id="signs">
+            <div class="check" data-sign="Sudden deaths" onclick="chk(this);previewDisease()"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg></div><div><div class="ctext">Sudden deaths</div><div class="csub">Several animals in a short time</div></div></div>
+            <div class="check" data-sign="High fever, weakness" onclick="chk(this);previewDisease()"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg></div><div><div class="ctext">High fever, weakness</div><div class="csub">Off feed, not moving</div></div></div>
+            <div class="check" data-sign="Skin blotches or sores" onclick="chk(this);previewDisease()"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg></div><div><div class="ctext">Skin blotches or sores</div><div class="csub">Reddening, nodules, blisters</div></div></div>
+            <div class="check" data-sign="Drooling or lameness" onclick="chk(this);previewDisease()"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg></div><div><div class="ctext">Drooling or lameness</div><div class="csub">Mouth or foot signs</div></div></div>
+          </div>
+        </div>
+        <div class="field"><label>How many affected?</label><input class="txt" id="rep-affected" type="text" placeholder="e.g. 6 sick, 3 dead"></div>
+        <div class="field"><label>Add a photo<span class="hint">Helps officers confirm faster</span></label>
+          <div class="photo" id="photo" onclick="togglePhoto()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.4"/></svg>
+            <div class="pt" id="photo-t">Take or attach photo</div><div class="ps" id="photo-s">Location is added automatically</div>
+          </div>
+        </div>
+        <div class="field"><label>Location</label><div class="geo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/><circle cx="12" cy="11" r="2.2"/></svg><span id="geo-label">Captured from device</span><span class="mono" id="geo-coord">14.6760, 121.0437</span></div></div>
+        <button class="submit" id="rep-submit" onclick="submitReport()">Send report</button>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="v-reports">
+      <div class="screen-head"><div class="kk" id="reports-kk">Saved on this device</div><h2 id="reports-title">My reports</h2>
+        <p id="reports-sub">Everything you have logged. Queued items sync when a connection is available.</p></div>
+      <div id="reports-body"></div>
+      <div style="padding:8px 18px 18px"><button class="ghost" id="sync-btn" onclick="syncNow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.7-3M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>Sync queued reports</button></div>
+    </div>
+
+    <!-- SURVEILLANCE -->
+    <div class="view" id="v-surveillance">
+      <div class="screen-head"><div class="kk">Response and control</div><h2>Surveillance</h2><p>Zones, quarantine, campaigns, and situation reports.</p></div>
+      <div class="list">
+        <div class="row" onclick="toast('Opens zone management in a later pass.')"><div class="lead l-red">RZ</div><div class="body"><div class="top"><span class="title">Red zone: San Isidro</span><span class="tier t-red">Active</span></div><div class="meta"><span>3km infected</span><span>7km buffer</span><span class="mono">ZONE-04</span></div></div><span class="chev">&rsaquo;</span></div>
+        <div class="row" onclick="toast('Opens quarantine checkpoint log in a later pass.')"><div class="lead l-amber">QC</div><div class="body"><div class="top"><span class="title">Quarantine checkpoints</span><span class="tier t-amber">4 posts</span></div><div class="meta"><span>Movement control</span><span>Updated 1h ago</span></div></div><span class="chev">&rsaquo;</span></div>
+        <div class="row" onclick="toast('Opens depopulation and indemnity records in a later pass.')"><div class="lead l-blue">DP</div><div class="body"><div class="top"><span class="title">Depopulation log</span><span class="tier t-blue">Ongoing</span></div><div class="meta"><span>Indemnity tracked</span><span class="mono">218 head</span></div></div><span class="chev">&rsaquo;</span></div>
+        <div class="row" onclick="toast('Opens ring vaccination tracker in a later pass.')"><div class="lead l-green">RV</div><div class="body"><div class="top"><span class="title">Ring vaccination</span><span class="tier t-green">72% done</span></div><div class="meta"><span>Buffer zone</span><span>Disinfection linked</span></div></div><span class="chev">&rsaquo;</span></div>
+      </div>
+      <div style="padding:0 18px 18px"><button class="primary" onclick="toast('Generates a SITREP from current zone data in a later pass.')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l4 4v14H5V3z"/><path d="M8 12h8M8 16h5"/></svg>Generate SITREP</button></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="view" id="v-alerts">
+      <div class="screen-head"><div class="kk">Near you</div><h2>Alerts</h2><p>Outbreak and quarantine notices in your area.</p></div>
+      <div style="padding:6px 18px 18px">
+        <div class="alert-card"><div class="ah"><span class="tier t-red">ASF</span><span class="atag" style="color:var(--sev-red)">Quarantine</span><span class="atime">2h ago</span></div><div class="amsg">Movement of pigs and pork is stopped within 3km of Brgy San Isidro. Do not sell or transport swine until cleared. Report any sudden deaths right away.</div><div class="aloc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/></svg>1.2km from your farm</div></div>
+        <div class="alert-card amber"><div class="ah"><span class="tier t-amber">AI</span><span class="atag" style="color:var(--sev-amber)">Watch</span><span class="atime">Yesterday</span></div><div class="amsg">Bird flu suspected in a nearby poultry farm. Keep your birds enclosed, limit visitors, and watch for sudden drops in laying or unusual deaths.</div><div class="aloc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/></svg>4km from your farm</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="tabbar hidden" id="tabbar"></nav>
+  <div class="modal" id="modal">
+    <div class="mcard">
+      <div class="mt" id="modal-title"></div>
+      <div class="mb" id="modal-body"></div>
+      <div class="mrow">
+        <button onclick="closeModal()">Cancel</button>
+        <button class="danger" id="modal-ok" onclick="runModal()">Confirm</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg><span id="toast-msg"></span></div>
+</div>
+
+<script>
+/* ===================== Vault ===================== */
+var Vault=(function(){
+  var key=null, subtle=(window.crypto&&window.crypto.subtle)?window.crypto.subtle:null, ITER=250000, VT='MIRIAD-VAULT-OK';
+  function available(){ return !!subtle; }
+  function b64(buf){ var b=new Uint8Array(buf),s=''; for(var i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+  function unb64(s){ var bin=atob(s),a=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return a; }
+  function rand(n){ var a=new Uint8Array(n); if(window.crypto&&window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for(var i=0;i<n;i++)a[i]=Math.floor(Math.random()*256); return a; }
+  function derive(secret,salt){ return subtle.importKey('raw',new TextEncoder().encode(secret),{name:'PBKDF2'},false,['deriveKey'])
+    .then(function(base){ return subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:ITER,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']); }); }
+  return {
+    available:available, ITER:ITER,
+    newSalt:function(){ return b64(rand(16)); },
+    makeVerifier:function(secret,saltB64){ if(!subtle) return Promise.resolve(null);
+      return derive(secret,unb64(saltB64)).then(function(k){ var iv=rand(12);
+        return subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(VT)).then(function(ct){ return {iv:b64(iv),ct:b64(ct)}; }); }); },
+    unlock:function(secret,saltB64,ver){ if(!subtle){ return Promise.resolve(true); }
+      return derive(secret,unb64(saltB64)).then(function(k){
+        return subtle.decrypt({name:'AES-GCM',iv:unb64(ver.iv)},k,unb64(ver.ct)).then(function(pt){
+          if(new TextDecoder().decode(pt)!==VT) return false; key=k; return true; }); }).catch(function(){ return false; }); },
+    setKeyFrom:function(secret,saltB64){ if(!subtle) return Promise.resolve(); return derive(secret,unb64(saltB64)).then(function(k){ key=k; }); },
+    seal:function(obj){ if(!subtle||!key) return Promise.resolve({plain:JSON.stringify(obj)});
+      var iv=rand(12); return subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(JSON.stringify(obj)))
+        .then(function(ct){ return {iv:b64(iv),ct:b64(ct)}; }); },
+    open:function(blob){ if(blob&&typeof blob.plain==='string') return Promise.resolve(JSON.parse(blob.plain));
+      if(!subtle||!key) return Promise.resolve(null);
+      return subtle.decrypt({name:'AES-GCM',iv:unb64(blob.iv)},key,unb64(blob.ct))
+        .then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); }).catch(function(){ return null; }); },
+    clear:function(){ key=null; }
+  };
+})();
+
+/* ===================== Storage ===================== */
+var STORES=['reports','premises','accounts','animals','policies','claims'];
+var DB=(function(){
+  var NAME='miriad-db',VER=4,db=null,useMem=false,ready,mem={};
+  STORES.forEach(function(s){ mem[s]=[]; });
+  ready=new Promise(function(resolve){
+    try{
+      var req=indexedDB.open(NAME,VER);
+      req.onupgradeneeded=function(e){ var d=e.target.result; STORES.forEach(function(s){ if(!d.objectStoreNames.contains(s)) d.createObjectStore(s,{keyPath:'id'}); }); };
+      req.onsuccess=function(e){ db=e.target.result; resolve(); };
+      req.onerror=function(){ useMem=true; resolve(); };
+    }catch(err){ useMem=true; resolve(); }
+  });
+  return {
+    ready:ready,
+    all:function(store){ return ready.then(function(){ if(useMem||!db) return mem[store].slice();
+      return new Promise(function(res){ var tx=db.transaction(store,'readonly'),rq=tx.objectStore(store).getAll();
+        rq.onsuccess=function(){res(rq.result||[])}; rq.onerror=function(){res(mem[store].slice())}; }); }); },
+    put:function(store,rec){ return ready.then(function(){ if(useMem||!db){ var a=mem[store],i=-1; a.forEach(function(r,ix){ if(r.id===rec.id) i=ix; }); if(i>=0)a[i]=rec; else a.push(rec); return rec; }
+      return new Promise(function(res){ var tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(rec); tx.oncomplete=function(){res(rec)}; tx.onerror=function(){res(rec)}; }); }); },
+    wipe:function(){ return ready.then(function(){ STORES.forEach(function(s){ mem[s]=[]; }); if(useMem||!db) return;
+      return new Promise(function(res){ var tx=db.transaction(STORES,'readwrite'); STORES.forEach(function(s){ tx.objectStore(s).clear(); }); tx.oncomplete=function(){res()}; tx.onerror=function(){res()}; }); }); }
+  };
+})();
+/* Storage keys are namespaced per account. The decrypted object keeps its own clean
+   id, so display code is unaffected, but two accounts can never overwrite each other. */
+function scopeKey(id){ return (session?session.id:'ACCT-0')+'|'+id; }
+function saveEnc(store,obj){ return Vault.seal(obj).then(function(b){ b.id=scopeKey(obj.id); return DB.put(store,b); }); }
+function loadEnc(store){
+  if(!session) return Promise.resolve([]);
+  var pre=session.id+'|';
+  return DB.all(store).then(function(rows){
+    var mine=rows.filter(function(r){ return String(r.id).indexOf(pre)===0; });
+    return Promise.all(mine.map(function(r){ return Vault.open(r); })).then(function(l){ return l.filter(function(x){return x;}); });
+  });
+}
+
+/* ===================== PCIC reference ===================== */
+var PCIC={
+  species:['Cattle','Carabao','Horse','Swine','Goat','Sheep','Chicken','Duck'],
+  purposes:{Cattle:['Draft','Dairy','Breeder','Fattener'],Carabao:['Draft','Dairy','Breeder','Fattener'],Horse:['Draft or working'],
+    Swine:['Breeder','Fattener'],Goat:['Breeder','Fattener'],Sheep:['Breeder','Fattener'],Chicken:['Broiler','Pullet or layer'],Duck:['Pullet or layer']},
+  age:{ 'Cattle':{f:7,t:60,l:'7 months to 5 years'}, 'Carabao':{f:7,t:60,l:'7 months to 5 years'},
+    'Horse':{f:36,t:60,l:'3 to 5 years'},
+    'Swine|Breeder':{f:6,t:24,l:'6 months to 2 years'}, 'Swine|Fattener':{f:1.6,t:6,l:'50 days to 6 months'},
+    'Goat':{f:4,t:12,l:'4 months to 1 year'}, 'Sheep':{f:4,t:12,l:'4 months to 1 year'},
+    'Chicken|Broiler':{f:0,t:2,l:'1 day to 8 weeks'}, 'Chicken|Pullet or layer':{f:0,t:17,l:'1 day to 75 weeks'},
+    'Duck|Pullet or layer':{f:3,t:15,l:'12 to 65 weeks'} },
+  excluded:{
+    Cattle:['Anaplasmosis','Anthrax','Babesiosis','Blackleg','Hemorrhagic Septicemia','Hoof and Mouth Disease','Johne disease','Rinderpest','Leucosis','Tuberculosis'],
+    Carabao:['Anaplasmosis','Anthrax','Babesiosis','Blackleg','Hemorrhagic Septicemia','Hoof and Mouth Disease','Johne disease','Rinderpest','Leucosis','Tuberculosis'],
+    Horse:['African Horse Sickness','Infectious Anemia','Scab'],
+    Swine:['Erysipelas','Hog Cholera','Hoof and Mouth Disease','Swine Plague','Salmonellosis'],
+    Chicken:['Avian or bird flu','Mycoplasma infection','Salmonella'],
+    Duck:['Avian or bird flu','Mycoplasma infection','Salmonella'],
+    Goat:[],Sheep:[]
+  },
+  covers:{non_commercial:'Non-commercial mortality',commercial:'Commercial mortality',dispersal:'Special cover, livestock dispersal',game:'Special cover, game fowls and animals'}
+};
+var DISPOSITIONS=[
+  {v:'in_herd',l:'Still with owner',tone:'green'},
+  {v:'sold',l:'Sold',tone:'blue'},
+  {v:'died',l:'Deceased',tone:'red'},
+  {v:'slaughtered',l:'Slaughtered',tone:'grey'},
+  {v:'transferred',l:'Transferred or dispersed',tone:'grey'},
+  {v:'lost',l:'Lost or stolen',tone:'grey'}
+];
+function dispMeta(v){ var d=DISPOSITIONS.filter(function(x){return x.v===v;})[0]; return d||DISPOSITIONS[0]; }
+
+/* Coverage guidance. Informational only, PCIC decides claims. */
+function coverageCheck(species,causeText){
+  var c=(causeText||'').toLowerCase();
+  var out={level:'unknown',msg:''};
+  if(!c) return out;
+  var isPoultry = species==='Chicken'||species==='Duck';
+  if(/asf|african swine/.test(c)){
+    return {level:'bad',msg:'African Swine Fever response normally involves a government culling order, and destruction of animals by administrative order is an excluded risk. A mortality claim on this basis is likely to be denied. Talk to your PCIC office before spending time on it.'};
+  }
+  if(/avian|bird flu|ai\b|h5n1/.test(c) && isPoultry){
+    return {level:'bad',msg:'Avian or bird flu is on the excluded list for poultry. It can only be covered under an extended arrangement agreed in advance, with a vaccination programme and a Veterinary Certificate already on file.'};
+  }
+  if(/fmd|foot and mouth|hoof and mouth/.test(c)){
+    return {level:'bad',msg:'Hoof and Mouth Disease is an excluded risk for cattle, carabao, and swine. Cover is possible only where extended coverage was arranged in advance with the additional premium paid.'};
+  }
+  if(/hog cholera|classical swine/.test(c) && species==='Swine'){
+    return {level:'bad',msg:'Hog Cholera is on the excluded list for swine. Extended coverage carries an additional premium loading and must be arranged before the loss.'};
+  }
+  if(/rabies/.test(c)){
+    return {level:'good',msg:'Rabies is named among the covered diseases under non-commercial cover. Prepare the Veterinary Disease Report and the death certificate.'};
+  }
+  if(/lumpy skin|lsd/.test(c)){
+    return {level:'warn',msg:'Lumpy Skin Disease is not named in the exclusion list, so it may fall under the general disease cover. Confirm with your PCIC office, and note that losses from an epidemic disease are indemnified at up to 60 percent of the sum insured.'};
+  }
+  if(/anthrax|blackleg|septicemia|tuberculosis|rinderpest|leucosis|babesiosis|anaplasmosis/.test(c)){
+    return {level:'bad',msg:'That cause appears on the excluded risk list for cattle and carabao. Check the policy and speak to your PCIC office before filing.'};
+  }
+  if(/slaughter/.test(c)) return {level:'bad',msg:'Emergency slaughter and government slaughter orders are excluded risks.'};
+  if(/theft|stolen|missing/.test(c)) return {level:'bad',msg:'Disappearance, theft, and robbery are excluded risks.'};
+  if(/typhoon|flood|earthquake|volcan/.test(c)) return {level:'bad',msg:'Typhoon, flood, earthquake, and volcanic eruption are excluded from the basic cover. They can be added by special arrangement with an additional premium.'};
+  return {level:'warn',msg:'Keep the cause exactly as your veterinarian states it. PCIC assesses each claim against the covered and excluded risks in your policy.'};
+}
+function waitingPeriodNote(policy,dateOfDeath){
+  if(!policy||!policy.startDate||!dateOfDeath) return null;
+  var days=Math.floor((new Date(dateOfDeath)-new Date(policy.startDate))/86400000);
+  if(days<0) return {level:'bad',msg:'The date of death is before the policy took effect. Losses outside the period of cover are excluded.'};
+  if(days<21) return {level:'warn',msg:'This death falls '+days+' day'+(days===1?'':'s')+' after the policy took effect. The general waiting period for disease claims is 21 calendar days, and 3 months for certain diseases. The waiting period does not apply to accidents or to renewed policies.'};
+  return null;
+}
+
+/* ===================== Enrollment codes ===================== */
+var OFFICES={'UPRI':'UP Resilience Institute','LGU1':'City Veterinary Office','PROV':'Provincial Veterinary Office','BAI1':'Bureau of Animal Industry'};
+function prefixSum(p){ var s=0; for(var i=0;i<p.length;i++) s+=p.charCodeAt(i); return s; }
+function validateCode(raw){
+  var code=(raw||'').trim().toUpperCase(), m=code.match(/^([A-Z0-9]{4})-?(\d{4})$/);
+  if(!m) return null; var pre=m[1],d=m[2];
+  if(!OFFICES[pre]) return null;
+  var a=+d[0],b=+d[1],c=+d[2],e=+d[3];
+  if(((a+b+c+prefixSum(pre))%10)!==e) return null;
+  return {prefix:pre,office:OFFICES[pre],code:pre+'-'+d};
+}
+
+/* ===================== State ===================== */
+var session=null, photoAttached=false, caseCounter=432, premCounter=1001, animCounter=0, polCounter=0, nlCounter=0;
+var premisesCache=[], animalsCache=[], policiesCache=[], formHerds=[], preselectFarm=null, herdFilter='all', currentAnimal=null, lastDoc={title:'',html:'',text:''};
+var SIGN_LABEL={'Sudden deaths':'Sudden deaths','High fever, weakness':'High fever','Skin blotches or sores':'Skin or sores','Drooling or lameness':'Drooling / lameness'};
+var ZOONOTIC={AI:true};
+var SPECIES_LIST=['Swine','Poultry','Cattle','Carabao','Goat','Other'];
+var AUTH_VIEWS=['welcome','signup-raiser','signup-officer','lock','accounts'];
+var TABS={
+  raiser:[{id:'herd',label:'Animals',icon:'M4 13c0-3 2-5 5-5 1-2 5-2 6 0 3 0 5 2 5 5v3H4z'},
+    {id:'coverage',label:'Coverage',icon:'M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z'},
+    {id:'report',label:'Report',special:true},
+    {id:'alerts',label:'Alerts',icon:'M6 8a6 6 0 0 1 12 0c0 5 2 7 2 7H4s2-2 2-7M10 20a2 2 0 0 0 4 0'}],
+  officer:[{id:'dashboard',label:'Overview',icon:'M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 8h6V4h-6z'},
+    {id:'registry',label:'Registry',icon:'M6 3h9l4 4v14H6zM13 3v5h5M9 13h6M9 17h4'},
+    {id:'report',label:'Report',special:true},
+    {id:'surveillance',label:'Response',icon:'M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z'}]
+};
+var HL={dashboard:'dashboard',registry:'registry','premises-detail':'registry','premises-form':'registry',report:'report',reports:'report',
+  surveillance:'surveillance',herd:'herd','animal-form':'herd','animal-detail':'herd',disposition:'herd',
+  coverage:'coverage','policy-form':'coverage','nl-form':'coverage',docview:'coverage',alerts:'alerts',home:'home',account:''};
+var TOP_LEVEL=['dashboard','registry','report','surveillance','herd','coverage','alerts'];
+var SUB_VIEW=['premises-detail','premises-form','reports','account','home','animal-form','animal-detail','disposition','policy-form','nl-form','docview'];
+var SUB_TITLE={'premises-detail':'Premises','premises-form':'New premises','reports':'Reports','account':'Account','home':'About MIRIAD',
+  'animal-form':'Add animal','animal-detail':'Animal record','disposition':'Animal status','policy-form':'Record policy','nl-form':'Notice of Loss','docview':'Document'};
+var currentView=null, navStack=[];
+function back(){ if(navStack.length){ go(navStack.pop(),true); return; } if(session) go(session.role==='raiser'?'herd':'dashboard',true); }
+
+/* ===================== Router ===================== */
+function renderTabs(active){
+  if(!session) return;
+  var bar=document.getElementById('tabbar'); bar.innerHTML='';
+  TABS[session.role].forEach(function(t){
+    var b=document.createElement('button');
+    b.className='tab'+(t.special?' report-tab':'')+(t.id===active?' on':'');
+    var svg=t.special?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="'+t.icon+'"/></svg>';
+    b.innerHTML=svg+'<span class="tl">'+t.label+'</span>';
+    b.onclick=function(){ go(t.id); };
+    bar.appendChild(b);
+  });
+}
+function go(id,isBack){
+  var isAuth=AUTH_VIEWS.indexOf(id)>=0;
+  if(!isAuth&&!session){ id='welcome'; isAuth=true; }
+  if(isAuth){ navStack=[]; }
+  else if(!isBack){
+    if(TOP_LEVEL.indexOf(id)>=0) navStack=[];
+    else if(SUB_VIEW.indexOf(id)>=0&&currentView&&currentView!==id&&AUTH_VIEWS.indexOf(currentView)<0) navStack.push(currentView);
+  }
+  currentView=id;
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  var el=document.getElementById('v-'+id); if(el) el.classList.add('active');
+  var dev=document.getElementById('device'), dark=isAuth||id==='home';
+  dev.classList.toggle('dark-chrome',dark); dev.classList.toggle('app-chrome',!dark);
+  var bar=document.getElementById('topbar');
+  bar.classList.toggle('hidden',isAuth);
+  document.getElementById('tabbar').classList.toggle('hidden',isAuth);
+  document.getElementById('scroll').classList.toggle('noTabs',isAuth);
+  var isSub=SUB_VIEW.indexOf(id)>=0;
+  bar.classList.toggle('sub',isSub&&!isAuth);
+  if(isSub){ var t=SUB_TITLE[id]||'';
+    if(id==='reports'&&session) t=session.role==='officer'?'Case register':'My reports';
+    if(id==='docview') t=lastDoc.title||'Document';
+    document.getElementById('pagetitle').textContent=t; }
+  if(!isAuth){ seedHistory(); renderTabs(HL[id]!==undefined?HL[id]:id); }
+  document.getElementById('scroll').scrollTo({top:0});
+  tuneCopy(id);
+  if(id==='reports') renderReports();
+  if(id==='dashboard') renderDashboard();
+  if(id==='registry') renderRegistry();
+  if(id==='herd') renderHerd();
+  if(id==='coverage') renderCoverage();
+  if(id==='report') populateFarmSelect();
+  if(id==='account') renderAccount();
+}
+function tuneCopy(id){
+  if(!session) return;
+  var r=session.role;
+  if(id==='report'){
+    if(r==='raiser'){ set('rep-title','Report a sick animal'); set('rep-sub','Fill what you can. It saves on this device and syncs later.'); set('farm-hint','Defaults to your farm');
+      var s=document.getElementById('rep-submit'); s.className='submit'; s.textContent='Send report';
+    } else { set('rep-title','Log a case'); set('rep-sub','Records into the case register with a suggested classification.'); set('farm-hint','Pick the farm this case belongs to');
+      var s2=document.getElementById('rep-submit'); s2.className='submit calm'; s2.textContent='Save to case register'; }
+  }
+  if(id==='reports'){
+    if(r==='raiser'){ set('reports-title','My reports'); set('reports-kk','Saved on this device'); set('reports-sub','Everything you have logged. Queued items sync when a connection is available.'); }
+    else { set('reports-title','Case register'); set('reports-kk','Field case log'); set('reports-sub','All cases logged on this device. Queued items sync when a connection is available.'); }
+  }
+}
+function set(id,txt){ var e=document.getElementById(id); if(e) e.textContent=txt; }
+function enterApp(){ go(session.role==='raiser'?'herd':'dashboard'); }
+function seedHistory(){ try{ if(!history.state||!history.state.miriad) history.pushState({miriad:1},''); }catch(e){} }
+window.addEventListener('popstate',function(){ if(!session) return; if(navStack.length){ back(); try{ history.pushState({miriad:1},''); }catch(e){} } });
+document.addEventListener('keydown',function(e){ if(e.key!=='Escape') return;
+  if(document.getElementById('modal').classList.contains('show')){ closeModal(); return; }
+  if(!session) return;
+  var t=(e.target.tagName||'').toLowerCase(); if(t==='input'||t==='select'||t==='textarea') return; if(navStack.length) back(); });
+
+/* ===================== Signup and unlock ===================== */
+function initials(n){ var p=(n||'').trim().split(/\s+/); if(!p[0]) return '?'; return ((p[0][0]||'')+(p.length>1?p[p.length-1][0]:'')).toUpperCase(); }
+function showErr(id,m){ var e=document.getElementById(id); e.textContent=m; e.classList.add('show'); }
+function hideErr(id){ document.getElementById(id).classList.remove('show'); }
+function createRaiser(){
+  hideErr('sr-err');
+  var name=document.getElementById('sr-name').value.trim(), farm=document.getElementById('sr-farm').value.trim();
+  var addr=document.getElementById('sr-addr').value.trim(), rsbsa=document.getElementById('sr-rsbsa').value.trim();
+  var pin=document.getElementById('sr-pin').value, pin2=document.getElementById('sr-pin2').value;
+  if(!name){ showErr('sr-err','Enter your name.'); return; }
+  if(!/^\d{4}$/.test(pin)){ showErr('sr-err','Your PIN must be exactly 4 digits.'); return; }
+  if(pin!==pin2){ showErr('sr-err','The two PINs do not match.'); return; }
+  var btn=document.getElementById('sr-btn'); btn.disabled=true; btn.textContent='Creating your vault...';
+  buildAccount({role:'raiser',name:name,secret:pin,farm:farm||(name.split(/\s+/)[0]+' Farm'),address:addr||'Not specified',rsbsa:rsbsa})
+    .catch(function(){ restoreBtn('sr-btn'); toast('Something went wrong creating the account.'); });
+}
+function onCodeInput(){
+  var res=validateCode(document.getElementById('so-code').value), ok=document.getElementById('so-ok');
+  if(res){ hideErr('so-err'); document.getElementById('so-office').textContent='Verified: '+res.office; ok.classList.add('show'); }
+  else ok.classList.remove('show');
+}
+function useCode(c){ document.getElementById('so-code').value=c; onCodeInput(); }
+function createOfficer(){
+  hideErr('so-err'); hideErr('so-err2');
+  var res=validateCode(document.getElementById('so-code').value);
+  if(!res){ showErr('so-err','That code is not recognised. Check it with the issuing office.'); return; }
+  var name=document.getElementById('so-name').value.trim(), p1=document.getElementById('so-pass').value, p2=document.getElementById('so-pass2').value;
+  if(!name){ showErr('so-err2','Enter your name.'); return; }
+  if(p1.length<8){ showErr('so-err2','Use at least 8 characters.'); return; }
+  if(p1!==p2){ showErr('so-err2','The two passphrases do not match.'); return; }
+  var btn=document.getElementById('so-btn'); btn.disabled=true; btn.textContent='Creating your vault...';
+  buildAccount({role:'officer',name:name,office:res.office,code:res.code,secret:p1})
+    .catch(function(){ restoreBtn('so-btn'); toast('Something went wrong creating the account.'); });
+}
+function buildAccount(o){
+  var salt=Vault.newSalt();
+  return Promise.all([Vault.makeVerifier(o.secret,salt),DB.all('accounts')]).then(function(res){
+    var ver=res[0], existing=res[1], n=1;
+    existing.forEach(function(a){ var v=parseInt((a.id||'').replace('ACCT-',''),10); if(!isNaN(v)&&v>=n) n=v+1; });
+    var acct={id:'ACCT-'+n,role:o.role,name:o.name,office:o.office||'',code:o.code||'',address:o.address||'',rsbsa:o.rsbsa||'',
+      salt:salt,iterations:Vault.ITER,verifier:ver,encrypted:Vault.available(),createdAt:new Date().toISOString(),fails:0};
+    return DB.put('accounts',acct).then(function(){
+      return Vault.setKeyFrom(o.secret,salt).then(function(){
+        session={role:acct.role,name:acct.name,office:acct.office,code:acct.code,id:acct.id,address:acct.address,rsbsa:acct.rsbsa};
+        return seedData(o).then(function(){ refreshCaches(); paintWho(); go('home');
+          toast(Vault.available()?'Account created. Your vault is encrypted and unlocked.':'Account created. Encryption is unavailable in this browser.'); });
+      });
+    });
+  });
+}
+function seedData(o){
+  return loadEnc('premises').then(function(list){
+    if(list.length) return;
+    var seed=[
+      {id:'PRM-00871',name:'Dela Cruz Piggery',owner:'J. Dela Cruz',barangay:'San Isidro',coord:'14.6742, 121.0399',zone:'red',ownerAccount:null,herds:[{species:'Swine',count:42}],createdAt:'2026-07-10T08:00:00Z'},
+      {id:'PRM-00902',name:'Reyes Poultry Farm',owner:'M. Reyes',barangay:'Malaya',coord:'14.6811, 121.0512',zone:'buffer',ownerAccount:null,herds:[{species:'Poultry',count:1800}],createdAt:'2026-07-10T08:05:00Z'},
+      {id:'PRM-00915',name:'Santos Cattle Ranch',owner:'R. Santos',barangay:'Bagong Silang',coord:'14.6699, 121.0333',zone:'clear',ownerAccount:null,herds:[{species:'Cattle',count:36}],createdAt:'2026-07-10T08:10:00Z'}
+    ];
+    if(o.role==='raiser') seed.push({id:'PRM-01001',name:o.farm,owner:o.name,barangay:o.address,coord:'14.6760, 121.0437',zone:'clear',ownerAccount:session.id,herds:[],createdAt:new Date().toISOString()});
+    return Promise.all(seed.map(function(p){ return saveEnc('premises',p); }));
+  });
+}
+var pendingAccount=null;
+function showLock(acct){
+  pendingAccount=acct;
+  document.getElementById('lk-av').textContent=initials(acct.name);
+  document.getElementById('lk-av').classList.toggle('officer',acct.role==='officer');
+  set('lk-name',acct.name); set('lk-role',acct.role==='officer'?(acct.office||'OFFICER'):'RAISER');
+  var inp=document.getElementById('lk-input');
+  if(acct.role==='officer'){ set('lk-sub','Enter your passphrase to unlock'); inp.className='din'; inp.setAttribute('maxlength','64'); inp.removeAttribute('inputmode'); inp.placeholder='Your passphrase'; }
+  else { set('lk-sub','Enter your PIN to unlock'); inp.className='din pin'; inp.setAttribute('maxlength','4'); inp.setAttribute('inputmode','numeric'); inp.placeholder='0000'; }
+  inp.value=''; go('lock');
+}
+function unlock(){
+  hideErr('lk-err');
+  var secret=document.getElementById('lk-input').value;
+  if(!secret){ showErr('lk-err','Enter your PIN or passphrase.'); return; }
+  var btn=document.getElementById('lk-btn'); btn.disabled=true; btn.textContent='Unlocking...';
+  DB.all('accounts').then(function(list){
+    var acct=pendingAccount||list[0]; if(!acct){ go('welcome'); return; }
+    if(acct.fails>=5){ showErr('lk-err','Too many failed attempts. Reset the device to continue.'); restoreBtn('lk-btn'); return; }
+    Vault.unlock(secret,acct.salt,acct.verifier).then(function(ok){
+      restoreBtn('lk-btn');
+      if(!ok){ acct.fails=(acct.fails||0)+1; DB.put('accounts',acct);
+        var left=5-acct.fails;
+        showErr('lk-err',left>0?('That did not work. '+left+' attempt'+(left===1?'':'s')+' left.'):'Too many failed attempts.');
+        document.getElementById('lk-input').value=''; return; }
+      acct.fails=0; DB.put('accounts',acct);
+      session={role:acct.role,name:acct.name,office:acct.office,code:acct.code,id:acct.id,address:acct.address||'',rsbsa:acct.rsbsa||''};
+      paintWho(); refreshCaches();
+      document.getElementById('vaultlabel').textContent=Vault.available()?'VAULT OPEN':'NO ENCRYPTION';
+      document.getElementById('cryptowarn').classList.toggle('show',!Vault.available());
+      go(acct.role==='raiser'?'herd':'dashboard');
+    });
+  });
+}
+function lockNow(){ clearSession();
+  DB.all('accounts').then(function(l){ if(!l.length){ go('welcome'); return; }
+    if(l.length===1){ showLock(l[0]); return; } renderAccountPicker(l); go('accounts'); }); }
+function switchAccount(){ clearSession();
+  DB.all('accounts').then(function(l){ renderAccountPicker(l); go('accounts'); }); }
+function clearSession(){ Vault.clear(); session=null; pendingAccount=null; navStack=[];
+  premisesCache=[]; animalsCache=[]; policiesCache=[]; currentAnimal=null; herdFilter='all';
+  document.getElementById('vaultlabel').textContent='VAULT LOCKED'; }
+function renderAccountPicker(list){
+  document.getElementById('acct-picker').innerHTML=list.map(function(a){
+    var off=a.role==='officer';
+    return '<button class="rolecard '+(off?'r-officer':'r-raiser')+'" onclick="pickAccount(\''+a.id+'\')">'
+      +'<span class="ric" style="font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:15px">'+initials(a.name)+'</span>'
+      +'<span><span class="rt">'+htm(a.name)+'</span><span class="rd">'+htm(off?(a.office||'Animal health officer'):'Raiser')+'</span>'
+      +'<span class="rq">'+(off?'OFFICER '+htm(a.code||''):'RAISER')+'</span></span></button>';
+  }).join('')||'<div class="lede" style="text-align:center">No accounts on this device yet.</div>';
+}
+function pickAccount(id){ DB.all('accounts').then(function(l){ var a=l.filter(function(x){return x.id===id;})[0]; if(a) showLock(a); }); }
+function confirmReset(){
+  askConfirm('Reset this device?',
+    'This erases the account, the herd record, policies, notices of loss, and every report saved here. It cannot be undone.',
+    'Erase everything', doReset);
+}
+function doReset(){
+  DB.wipe().then(function(){
+    /* Reset every piece of in-memory state rather than relying on a page reload,
+       which some embedded and sandboxed browsers will not perform. */
+    Vault.clear();
+    session=null; currentAnimal=null; preselectFarm=null; herdFilter='all';
+    premisesCache=[]; animalsCache=[]; policiesCache=[]; formHerds=[];
+    caseCounter=432; premCounter=1001; animCounter=0; polCounter=0; nlCounter=0;
+    photoAttached=false; navStack=[]; currentView=null; lastDoc={title:'',html:'',text:''};
+    document.getElementById('vaultlabel').textContent='VAULT LOCKED';
+    document.getElementById('q').textContent='All synced';
+    document.getElementById('saved-cnt').textContent='0';
+    document.getElementById('cryptowarn').classList.remove('show');
+    document.getElementById('printdoc').innerHTML='';
+    resetForm();
+    ['sr-name','sr-farm','sr-addr','sr-rsbsa','sr-pin','sr-pin2','so-code','so-name','so-pass','so-pass2','lk-input']
+      .forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+    ['sr-err','so-err','so-err2','lk-err'].forEach(function(id){ var e=document.getElementById(id); if(e) e.classList.remove('show'); });
+    document.getElementById('so-ok').classList.remove('show');
+    restoreBtn('sr-btn'); restoreBtn('so-btn'); restoreBtn('lk-btn');
+    go('welcome');
+    toast('Device reset. Everything stored here has been erased.');
+  });
+}
+var modalAction=null;
+function askConfirm(title,body,okLabel,fn){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').textContent=body;
+  document.getElementById('modal-ok').textContent=okLabel;
+  modalAction=fn;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('show'); modalAction=null; }
+function runModal(){ var f=modalAction; closeModal(); if(typeof f==='function') f(); }
+var BTN_HTML={};
+function restoreBtn(id){ var b=document.getElementById(id); if(b&&BTN_HTML[id]!==undefined){ b.innerHTML=BTN_HTML[id]; b.disabled=false; } }
+function paintWho(){
+  if(!session) return;
+  document.getElementById('whobtn').classList.toggle('officer',session.role==='officer');
+  document.getElementById('whoav').textContent=initials(session.name);
+  document.getElementById('whotx').textContent=session.name.split(/\s+/)[0];
+  set('brandsub',session.role==='officer'?(session.office||'Animal health officer'):'Raiser account');
+}
+function renderAccount(){
+  if(!session) return;
+  var av=document.getElementById('ac-av'); av.textContent=initials(session.name); av.classList.toggle('officer',session.role==='officer');
+  set('ac-name',session.name); set('ac-office',session.role==='officer'?session.office:'Raiser');
+  var badge=document.getElementById('ac-badge');
+  if(session.role==='officer'){ badge.className='abadge t-blue'; badge.textContent='OFFICER \u00b7 '+(session.code||''); }
+  else { badge.className='abadge t-green'; badge.textContent='RAISER'; }
+  set('ac-vault',Vault.available()
+    ? 'Records are encrypted with AES-GCM. The key is derived from your PIN or passphrase using PBKDF2 and is held in memory only, so the vault relocks whenever the app is closed or reloaded.'
+    : 'This browser did not provide the encryption API, so records are saved without encryption. Serve MIRIAD over https for the vault to work.');
+  set('ac-perms',session.role==='officer'
+    ? 'Register and view every premises in the area, log cases against any farm, see the full case register, and open outbreak zoning and situation reports.'
+    : 'Keep the herd record, record PCIC policies, report sick animals, file a Notice of Loss, and receive quarantine alerts. The area registry and response tools are officer only.');
+  var box=document.getElementById('ac-raiserbox');
+  box.innerHTML = session.role==='raiser'
+    ? '<div class="secbox"><div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l4 4v14H5V3z"/></svg>Insurance details on file</div>'
+      +'<div class="kv"><span class="k">Address of assured</span><span class="v">'+(session.address||'Not specified')+'</span></div>'
+      +'<div class="kv"><span class="k">RSBSA number</span><span class="v">'+(session.rsbsa||'Not registered')+'</span></div>'
+      +'<div class="sl" style="margin-top:10px">These appear on every PCIC document MIRIAD generates for you.</div></div>'
+    : '';
+}
+
+/* ===================== Helpers ===================== */
+function timeAgo(iso){ var s=Math.floor((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+function diseaseClass(d){ return d==='Unclassified'?'grey':(ZOONOTIC[d]?'red':'amber'); }
+function zoneMeta(z){ return z==='red'?{c:'t-red',t:'Red zone'}:z==='buffer'?{c:'t-amber',t:'Buffer'}:{c:'t-green',t:'Clear'}; }
+function herdSummary(h){ return (h||[]).map(function(x){return x.count+' '+x.species.toLowerCase();}).join(', '); }
+function esc(s){ return String(s==null?'':s).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function htm(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function visibleReports(){ return loadEnc('reports').then(function(l){ return session.role==='officer'?l:l.filter(function(r){return r.byAccount===session.id;}); }); }
+function myFarm(list){ return list.filter(function(p){return p.ownerAccount===session.id;})[0]||null; }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){ if(!d) return 'Not specified'; var x=new Date(d); if(isNaN(x)) return d;
+  return x.toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}); }
+function peso(n){ if(n===''||n==null||isNaN(n)) return 'Not specified'; return 'PHP '+Number(n).toLocaleString('en-PH'); }
+function daysBetween(a,b){ return Math.floor((new Date(b)-new Date(a))/86400000); }
+function ageMonths(dob){ if(!dob) return null; var d=new Date(dob),n=new Date();
+  return (n.getFullYear()-d.getFullYear())*12+(n.getMonth()-d.getMonth())+(n.getDate()>=d.getDate()?0:-1); }
+function ageLabel(dob){ var m=ageMonths(dob); if(m==null) return 'Age not recorded';
+  if(m<1) return 'Under a month'; if(m<24) return m+' month'+(m===1?'':'s');
+  var y=Math.floor(m/12),r=m%12; return y+' year'+(y===1?'':'s')+(r?' '+r+' mo':''); }
+function ageRule(species,purpose){ return PCIC.age[species+'|'+purpose]||PCIC.age[species]||null; }
+
+/* ===================== Herd record ===================== */
+function myAnimals(){ return loadEnc('animals').then(function(l){ return l.filter(function(a){return a.account===session.id;}); }); }
+function myPolicies(){ return loadEnc('policies').then(function(l){ return l.filter(function(p){return p.account===session.id;}); }); }
+function policyFor(animalId,pols){ return (pols||policiesCache).filter(function(p){ return (p.animalIds||[]).indexOf(animalId)>=0; })[0]||null; }
+function policyState(p){
+  if(!p||!p.endDate) return {level:'none',label:'Not insured',days:null};
+  var d=daysBetween(today(),p.endDate);
+  if(d<0) return {level:'expired',label:'Expired '+Math.abs(d)+'d ago',days:d};
+  if(d<=30) return {level:'soon',label:'Expires in '+d+'d',days:d};
+  return {level:'ok',label:'Insured to '+fmtDate(p.endDate),days:d};
+}
+function renderHerd(){
+  Promise.all([myAnimals(),myPolicies()]).then(function(r){
+    var animals=r[0], pols=r[1]; animalsCache=animals; policiesCache=pols;
+    var inHerd=animals.filter(function(a){return a.disposition==='in_herd';});
+    var died=animals.filter(function(a){return a.disposition==='died';});
+    var sold=animals.filter(function(a){return a.disposition==='sold';});
+    var head=inHerd.reduce(function(s,a){return s+(a.count||1);},0);
+    var insured=inHerd.filter(function(a){ var st=policyState(policyFor(a.id,pols)); return st.level==='ok'||st.level==='soon'; });
+    var expiring=inHerd.filter(function(a){ var st=policyState(policyFor(a.id,pols)); return st.level==='soon'||st.level==='expired'; });
+    document.getElementById('herd-kpis').innerHTML=
+      kpi(String(head),'Head in herd','','across '+inHerd.length+' record'+(inHerd.length===1?'':'s'))+
+      kpi(String(insured.length),'Records insured','',insured.length?'PCIC cover active':'no cover yet')+
+      (expiring.length?'<div class="kpi alert"><div class="n">'+expiring.length+'</div><div class="l">Cover expiring</div><div class="delta">renew or lose cover</div></div>'
+        :kpi('0','Cover expiring','','nothing due'))+
+      kpi(String(died.length),'Deceased','',died.length?'claimable if insured':'no losses');
+    var banner=document.getElementById('herd-banner');
+    if(!animals.length){ banner.innerHTML=''; }
+    else if(expiring.length){
+      banner.innerHTML='<div class="cover-banner exp"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>'
+        +'<span><span class="cbt">'+expiring.length+' record'+(expiring.length===1?'':'s')+' need attention</span><span class="cbs">Cover has expired or is within 30 days of expiry. Renewal within 30 days of expiry keeps your original premium rate.</span></span></div>';
+    } else if(!insured.length){
+      banner.innerHTML='<div class="cover-banner none"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z"/></svg></span>'
+        +'<span><span class="cbt">No PCIC cover recorded</span><span class="cbs">Record a policy under Coverage so MIRIAD can track expiry and prepare a Notice of Loss if an animal dies.</span></span></div>';
+    } else banner.innerHTML='';
+    var counts={all:animals.length};
+    DISPOSITIONS.forEach(function(d){ counts[d.v]=animals.filter(function(a){return a.disposition===d.v;}).length; });
+    var fl=[{v:'all',l:'All'}].concat(DISPOSITIONS.filter(function(d){ return counts[d.v]>0||d.v==='in_herd'; }).map(function(d){ return {v:d.v,l:d.l}; }));
+    document.getElementById('herd-filters').innerHTML=fl.map(function(f){
+      return '<button class="fchip'+(herdFilter===f.v?' on':'')+'" onclick="setHerdFilter(\''+f.v+'\')">'+f.l+' '+(counts[f.v]||0)+'</button>'; }).join('');
+    var shown=herdFilter==='all'?animals:animals.filter(function(a){return a.disposition===herdFilter;});
+    var body=document.getElementById('herd-body');
+    if(!shown.length){
+      body.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13c0-3 2-5 5-5 1-2 5-2 6 0 3 0 5 2 5 5v3H4z"/></svg><div class="et">'
+        +(animals.length?'Nothing in this filter':'No animals recorded yet')+'</div><div class="es">'
+        +(animals.length?'Try another status.':'Add an animal to start your herd record. MIRIAD asks for the details PCIC needs, so an application or a claim is ready when you need it.')+'</div></div>';
+      return;
+    }
+    shown.sort(function(a,b){ return (a.disposition==='in_herd'?0:1)-(b.disposition==='in_herd'?0:1); });
+    body.innerHTML='<div class="list">'+shown.map(function(a){
+      var dm=dispMeta(a.disposition), st=policyState(policyFor(a.id,pols));
+      var stTone=st.level==='ok'?'t-green':st.level==='soon'?'t-amber':st.level==='expired'?'t-red':'t-grey';
+      var idlabel=a.idValue?(a.idType+' '+a.idValue):'No mark';
+      return '<div class="row" onclick="openAnimal(\''+a.id+'\')"><div class="lead l-'+dm.tone+'">'+a.species.substring(0,2).toUpperCase()+'</div>'
+        +'<div class="body"><div class="top"><span class="title">'+htm(a.species)+' \u00b7 '+(a.count||1)+' head</span><span class="tier t-'+dm.tone+'">'+dm.l+'</span></div>'
+        +'<div class="meta"><span class="mono">'+idlabel+'</span><span>'+htm(a.purpose)+'</span><span class="tier '+stTone+'" style="padding:1px 7px">'+st.label+'</span></div></div><span class="chev">&rsaquo;</span></div>';
+    }).join('')+'</div>';
+  });
+}
+function setHerdFilter(v){ herdFilter=v; renderHerd(); }
+function openAnimal(id){
+  Promise.all([myAnimals(),myPolicies(),visibleReports()]).then(function(r){
+    var a=r[0].filter(function(x){return x.id===id;})[0]; if(!a) return;
+    currentAnimal=a;
+    var p=policyFor(a.id,r[1]), st=policyState(p), dm=dispMeta(a.disposition);
+    var rule=ageRule(a.species,a.purpose), m=ageMonths(a.dob);
+    var ageNote='';
+    if(rule&&m!=null){ var ok=m>=rule.f&&m<=rule.t;
+      ageNote='<div class="cover-alert '+(ok?'good':'warn')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        +(ok?'<path d="M5 12l5 5L19 7"/>':'<path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/>')+'</svg><span>'
+        +(ok?'Within the PCIC insurable age for this purpose ('+rule.l+').':'Outside the usual insurable age of '+rule.l+'. Cattle, carabao, and horses over 5 years can still be covered up to age 12 with a premium loading.')+'</span></div>'; }
+    var claimBtn = a.disposition==='died'
+      ? '<div style="padding:8px 18px 6px"><button class="primary danger" onclick="startNoticeOfLoss(\''+a.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l4 4v14H5V3z"/><path d="M8 12h8M8 16h5"/></svg>File a Notice of Loss</button></div>'
+      : '';
+    document.getElementById('animal-detail-body').innerHTML=
+      '<div class="profile"><div class="ptop"><div><div class="pname">'+htm(a.species)+' \u00b7 '+(a.count||1)+' head</div><div class="pid">'+a.id+'</div></div><span class="zone-pill t-'+dm.tone+'">'+dm.l+'</span></div>'
+      +'<div class="kv"><span class="k">Purpose</span><span class="v">'+htm(a.purpose)+'</span></div>'
+      +'<div class="kv"><span class="k">Breed</span><span class="v">'+htm(a.breed||'Not specified')+'</span></div>'
+      +'<div class="kv"><span class="k">Sex</span><span class="v">'+htm(a.sex||'Not specified')+'</span></div>'
+      +'<div class="kv"><span class="k">Date of birth</span><span class="v">'+fmtDate(a.dob)+'</span></div>'
+      +'<div class="kv"><span class="k">Age now</span><span class="v">'+ageLabel(a.dob)+'</span></div>'
+      +'<div class="kv"><span class="k">Identification</span><span class="v mono">'+htm(a.idValue?(a.idType+' '+a.idValue):'None recorded')+'</span></div>'
+      +'<div class="kv"><span class="k">Marks</span><span class="v">'+htm(a.marks||'Not specified')+'</span></div>'
+      +'<div class="kv"><span class="k">Date acquired</span><span class="v">'+fmtDate(a.acquired)+'</span></div>'
+      +'<div class="kv"><span class="k">Value per head</span><span class="v">'+peso(a.value)+'</span></div>'
+      +(a.dispositionDate&&a.disposition!=='in_herd'?'<div class="kv"><span class="k">'+dm.l+' on</span><span class="v">'+fmtDate(a.dispositionDate)+'</span></div>':'')
+      +(a.salePrice?'<div class="kv"><span class="k">Sale price</span><span class="v">'+peso(a.salePrice)+'</span></div>':'')
+      +(a.cause?'<div class="kv"><span class="k">Cause of death</span><span class="v">'+htm(a.cause)+'</span></div>':'')
+      +'</div>'
+      +'<div class="subhead">PCIC cover</div>'
+      +'<div class="profile" style="margin-top:0">'
+        +'<div class="kv" style="border-top:0"><span class="k">Status</span><span class="v">'+st.label+'</span></div>'
+        +(p?'<div class="kv"><span class="k">Policy number</span><span class="v mono">'+htm(p.policyNo)+'</span></div>'
+          +'<div class="kv"><span class="k">Type of cover</span><span class="v">'+PCIC.covers[p.coverType]+'</span></div>'
+          +'<div class="kv"><span class="k">Effective</span><span class="v">'+fmtDate(p.startDate)+'</span></div>'
+          +'<div class="kv"><span class="k">Expiry</span><span class="v">'+fmtDate(p.endDate)+'</span></div>'
+          +'<div class="kv"><span class="k">Sum insured</span><span class="v">'+peso(p.sumInsured)+'</span></div>'
+          +'<div class="kv"><span class="k">Deductible</span><span class="v">'+(p.deductible?p.deductible+' percent':'Not specified')+'</span></div>'
+          :'<div class="sl" style="font-size:12px;color:var(--muted);padding-top:8px">No policy covers this record yet. Record one under Coverage.</div>')
+      +'</div>'
+      +'<div style="padding:10px 18px 0">'+ageNote+'</div>'
+      +claimBtn
+      +'<div style="padding:8px 18px 22px"><button class="ghost" onclick="openDisposition(\''+a.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Update animal status</button></div>';
+    go('animal-detail');
+  });
+}
+function onSpeciesChange(){
+  var sp=document.getElementById('af-species').value, sel=document.getElementById('af-purpose');
+  sel.innerHTML=(PCIC.purposes[sp]||['General']).map(function(p){ return '<option>'+p+'</option>'; }).join('');
+  checkAge();
+}
+function checkAge(){
+  var sp=document.getElementById('af-species').value, pu=document.getElementById('af-purpose').value, dob=document.getElementById('af-dob').value;
+  var rule=ageRule(sp,pu), box=document.getElementById('af-agecheck');
+  if(!rule){ box.innerHTML=''; return; }
+  if(!dob){ box.innerHTML='<div class="cover-alert warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/></svg><span>PCIC insurable age for this purpose is <b>'+rule.l+'</b>. Add a date of birth and MIRIAD will check it.</span></div>'; return; }
+  var m=ageMonths(dob), ok=m>=rule.f&&m<=rule.t;
+  box.innerHTML='<div class="cover-alert '+(ok?'good':'warn')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+    +(ok?'<path d="M5 12l5 5L19 7"/>':'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>')+'</svg><span>'
+    +(ok?'Age fits the PCIC insurable range of '+rule.l+'.':'This animal is outside the usual insurable age of <b>'+rule.l+'</b>. Cattle, carabao, and horses over 5 years can still be accepted up to age 12 with a premium loading. Confirm with your PCIC office.')+'</span></div>';
+}
+function openAnimalForm(){
+  var sel=document.getElementById('af-species');
+  sel.innerHTML=PCIC.species.map(function(s){ return '<option>'+s+'</option>'; }).join('');
+  onSpeciesChange();
+  ['af-breed','af-idval','af-marks','af-value','af-dob','af-acq'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('af-count').value='1';
+  document.getElementById('af-agecheck').innerHTML='';
+  go('animal-form');
+}
+function nextAnimalId(){ animCounter++; return 'ANM-'+String(animCounter).padStart(4,'0'); }
+function saveAnimal(){
+  var count=parseInt(document.getElementById('af-count').value,10)||1;
+  var rec={id:nextAnimalId(),account:session.id,createdAt:new Date().toISOString(),
+    species:document.getElementById('af-species').value, purpose:document.getElementById('af-purpose').value,
+    breed:document.getElementById('af-breed').value.trim(), sex:document.getElementById('af-sex').value,
+    count:count, dob:document.getElementById('af-dob').value,
+    idType:document.getElementById('af-idtype').value, idValue:document.getElementById('af-idval').value.trim(),
+    marks:document.getElementById('af-marks').value.trim(), acquired:document.getElementById('af-acq').value,
+    value:document.getElementById('af-value').value, disposition:'in_herd', dispositionDate:'', salePrice:'', cause:'', note:''};
+  saveEnc('animals',rec).then(function(){ refreshCaches(); toast(rec.species+' added to your herd record.'); go('herd'); });
+}
+function openDisposition(id){
+  currentAnimal=animalsCache.filter(function(a){return a.id===id;})[0]||currentAnimal;
+  if(!currentAnimal) return;
+  var sel=document.getElementById('dp-status');
+  sel.innerHTML=DISPOSITIONS.map(function(d){ return '<option value="'+d.v+'"'+(d.v===currentAnimal.disposition?' selected':'')+'>'+d.l+'</option>'; }).join('');
+  document.getElementById('dp-date').value=currentAnimal.dispositionDate||today();
+  document.getElementById('dp-price').value=currentAnimal.salePrice||'';
+  document.getElementById('dp-cause').value=currentAnimal.cause||'';
+  document.getElementById('dp-note').value=currentAnimal.note||'';
+  set('disp-sub','Updating '+currentAnimal.species+' record '+currentAnimal.id+'.');
+  onDispChange(); go('disposition');
+}
+function onDispChange(){
+  var v=document.getElementById('dp-status').value;
+  document.getElementById('dp-pricewrap').style.display = v==='sold'?'block':'none';
+  document.getElementById('dp-causewrap').style.display = v==='died'?'block':'none';
+  var box=document.getElementById('dp-cover');
+  if(v==='sold'){
+    box.innerHTML='<div class="cover-alert warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/></svg><span>Fattener cover runs until the animal is sold, whichever comes first. Marking this sold ends the insurable interest on it.</span></div>';
+  } else if(v==='died'){
+    var c=document.getElementById('dp-cause').value;
+    var chk=coverageCheck(currentAnimal?currentAnimal.species:'',c);
+    var extra=chk.msg?'<div class="cover-alert '+(chk.level==='bad'?'bad':chk.level==='good'?'good':'warn')+'" style="margin-top:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/></svg><span>'+chk.msg+'</span></div>':'';
+    box.innerHTML='<div class="cover-alert bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span><b>If this animal is insured, PCIC requires a Notice of Loss within 10 calendar days of the death.</b> MIRIAD will offer to prepare it once you save.</span></div>'+extra;
+  } else if(v==='lost'){
+    box.innerHTML='<div class="cover-alert bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/></svg><span>Disappearance, theft, and robbery are excluded risks under PCIC livestock cover.</span></div>';
+  } else if(v==='slaughtered'){
+    box.innerHTML='<div class="cover-alert bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/></svg><span>Emergency slaughter and government slaughter orders are excluded risks.</span></div>';
+  } else box.innerHTML='';
+}
+function saveDisposition(){
+  if(!currentAnimal) return;
+  var v=document.getElementById('dp-status').value;
+  currentAnimal.disposition=v;
+  currentAnimal.dispositionDate=document.getElementById('dp-date').value;
+  currentAnimal.salePrice=v==='sold'?document.getElementById('dp-price').value:'';
+  currentAnimal.cause=v==='died'?document.getElementById('dp-cause').value.trim():'';
+  currentAnimal.note=document.getElementById('dp-note').value.trim();
+  var died=v==='died', a=currentAnimal;
+  saveEnc('animals',currentAnimal).then(function(){
+    refreshCaches();
+    if(died){ toast('Recorded as died. Prepare the Notice of Loss now if this animal is insured.'); startNoticeOfLoss(a.id); }
+    else { toast('Animal status updated.'); go('herd'); }
+  });
+}
+
+/* ===================== Coverage ===================== */
+function renderCoverage(){
+  Promise.all([myPolicies(),myAnimals(),loadEnc('claims')]).then(function(r){
+    var pols=r[0], animals=r[1], claims=r[2].filter(function(c){return c.account===session.id;});
+    policiesCache=pols; animalsCache=animals;
+    var body=document.getElementById('coverage-body');
+    if(!pols.length){
+      body.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z"/></svg><div class="et">No policy recorded</div><div class="es">Record your PCIC livestock mortality policy so MIRIAD can watch the expiry and prepare claim documents.</div></div>';
+    } else {
+      body.innerHTML='<div class="list">'+pols.map(function(p){
+        var st=policyState(p), tone=st.level==='ok'?'green':st.level==='soon'?'amber':'red';
+        var n=(p.animalIds||[]).length;
+        return '<div class="row" onclick="toast(\'Policy '+esc(p.policyNo)+'. Editing opens in a later pass.\')"><div class="lead l-'+tone+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z"/></svg></div>'
+          +'<div class="body"><div class="top"><span class="title">'+htm(p.policyNo||'Policy')+'</span><span class="tier t-'+tone+'">'+st.label+'</span></div>'
+          +'<div class="meta"><span>'+PCIC.covers[p.coverType]+'</span><span>'+n+' record'+(n===1?'':'s')+'</span><span>'+peso(p.sumInsured)+'</span></div></div><span class="chev">&rsaquo;</span></div>';
+      }).join('')+'</div>';
+    }
+    var nl=document.getElementById('nl-list');
+    if(!claims.length){ nl.innerHTML='<div class="empty" style="margin:2px 18px 8px;padding:24px"><div class="et">No notices filed</div><div class="es">A Notice of Loss appears here once you record a death and generate it.</div></div>'; }
+    else {
+      claims.sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
+      nl.innerHTML='<div class="list">'+claims.map(function(c){
+        var left=10-daysBetween(c.dateOfDeath,today());
+        var tone=left<0?'red':left<=3?'amber':'green';
+        var lbl=left<0?('Window closed '+Math.abs(left)+'d ago'):(left+'d left to file');
+        return '<div class="row" onclick="viewNotice(\''+c.id+'\')"><div class="lead l-'+tone+'">NL</div>'
+          +'<div class="body"><div class="top"><span class="title">'+htm(c.species)+' \u00b7 '+c.headLost+' head</span><span class="tier t-'+tone+'">'+lbl+'</span></div>'
+          +'<div class="meta"><span class="mono">'+c.id+'</span><span>'+fmtDate(c.dateOfDeath)+'</span><span>'+htm(c.cause||'Cause not stated')+'</span></div></div><span class="chev">&rsaquo;</span></div>';
+      }).join('')+'</div>';
+    }
+  });
+}
+function openPolicyForm(){
+  myAnimals().then(function(animals){
+    animalsCache=animals;
+    var live=animals.filter(function(a){return a.disposition==='in_herd';});
+    var box=document.getElementById('pl-animals');
+    box.innerHTML = live.length
+      ? live.map(function(a){ return '<div class="check" data-aid="'+a.id+'" onclick="chk(this)"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 7"/></svg></div><div><div class="ctext">'+htm(a.species)+' \u00b7 '+(a.count||1)+' head</div><div class="csub">'+htm(a.purpose)+(a.idValue?' \u00b7 '+htm(a.idType+' '+a.idValue):'')+'</div></div></div>'; }).join('')
+      : '<div class="sub" style="margin:0">Add animals to your herd record first, then you can attach them to a policy.</div>';
+    ['pl-no','pl-si','pl-prem','pl-ded'].forEach(function(id){ document.getElementById(id).value=''; });
+    document.getElementById('pl-start').value=today();
+    var y=new Date(); y.setFullYear(y.getFullYear()+1);
+    document.getElementById('pl-end').value=y.toISOString().slice(0,10);
+    document.getElementById('pl-vet').classList.remove('on');
+    document.getElementById('pl-estimate').innerHTML='<div class="cover-alert warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/></svg><span>Enter the figures exactly as printed on your policy. PCIC sets premium rates and deductibles, and they are subject to change.</span></div>';
+    go('policy-form');
+  });
+}
+function nextPolicyId(){ polCounter++; return 'POL-'+String(polCounter).padStart(4,'0'); }
+function savePolicy(){
+  var no=document.getElementById('pl-no').value.trim();
+  if(!no){ toast('Enter the policy number.'); return; }
+  var ids=[]; document.querySelectorAll('#pl-animals .check.on').forEach(function(c){ ids.push(c.getAttribute('data-aid')); });
+  if(!ids.length){ toast('Tick at least one animal this policy covers.'); return; }
+  var rec={id:nextPolicyId(),account:session.id,policyNo:no,coverType:document.getElementById('pl-cover').value,
+    animalIds:ids,sumInsured:document.getElementById('pl-si').value,premium:document.getElementById('pl-prem').value,
+    startDate:document.getElementById('pl-start').value,endDate:document.getElementById('pl-end').value,
+    deductible:document.getElementById('pl-ded').value,vetCert:document.getElementById('pl-vet').classList.contains('on'),
+    createdAt:new Date().toISOString()};
+  saveEnc('policies',rec).then(function(){ refreshCaches(); toast('Policy '+no+' recorded. MIRIAD will watch the expiry.'); go('coverage'); });
+}
+
+/* ===================== Notice of Loss ===================== */
+function startNoticeOfLoss(animalId){
+  Promise.all([myAnimals(),myPolicies(),visibleReports()]).then(function(r){
+    var animals=r[0],pols=r[1],reports=r[2];
+    animalsCache=animals; policiesCache=pols;
+    var dead=animals.filter(function(a){return a.disposition==='died';});
+    var pool=dead.length?dead:animals;
+    if(!pool.length){ toast('Add an animal to your herd record first.'); return; }
+    var sel=document.getElementById('nl-animal');
+    sel.innerHTML=pool.map(function(a){ return '<option value="'+a.id+'">'+htm(a.species)+' \u00b7 '+(a.count||1)+' head'+(a.idValue?' \u00b7 '+htm(a.idValue):'')+'</option>'; }).join('');
+    if(animalId) sel.value=animalId;
+    var ps=document.getElementById('nl-policy');
+    ps.innerHTML=(pols.length?pols.map(function(p){ return '<option value="'+p.id+'">'+htm(p.policyNo)+' \u00b7 '+PCIC.covers[p.coverType]+'</option>'; }).join(''):'')+'<option value="">No policy recorded</option>';
+    var rs=document.getElementById('nl-report');
+    rs.innerHTML='<option value="">Do not link a report</option>'+reports.map(function(x){ return '<option value="'+x.id+'">'+x.id+' \u00b7 '+htm(x.species)+' \u00b7 '+htm(x.disease)+'</option>'; }).join('');
+    var a=pool.filter(function(x){return x.id===sel.value;})[0];
+    document.getElementById('nl-date').value=(a&&a.dispositionDate)||today();
+    document.getElementById('nl-cause').value=(a&&a.cause)||'';
+    document.getElementById('nl-count').value=(a&&a.count)||1;
+    onNlAnimal(); onNlDate(); onNlCause();
+    go('nl-form');
+  });
+}
+function onNlAnimal(){
+  var id=document.getElementById('nl-animal').value, a=animalsCache.filter(function(x){return x.id===id;})[0];
+  if(!a) return;
+  if(a.dispositionDate) document.getElementById('nl-date').value=a.dispositionDate;
+  if(a.cause) document.getElementById('nl-cause').value=a.cause;
+  document.getElementById('nl-count').value=a.count||1;
+  var p=policyFor(a.id,policiesCache);
+  if(p) document.getElementById('nl-policy').value=p.id;
+  onNlCause(); onNlDate();
+}
+function onNlDate(){
+  var d=document.getElementById('nl-date').value, box=document.getElementById('nl-deadline');
+  if(!d){ box.innerHTML=''; return; }
+  var elapsed=daysBetween(d,today()), left=10-elapsed, docLeft=30-elapsed;
+  var cls=left<0?'late':left<=3?'warn':'ok';
+  var msg = left<0
+    ? 'The 10 day Notice of Loss window closed '+Math.abs(left)+' day'+(Math.abs(left)===1?'':'s')+' ago. File anyway and explain the delay to your PCIC office.'
+    : left===0 ? 'Today is the last day of the 10 day Notice of Loss window.'
+    : left+' day'+(left===1?'':'s')+' left to file the Notice of Loss. Supporting documents are due within '+(docLeft>0?docLeft+' days':'the 30 day window, which has passed')+'.';
+  box.innerHTML='<div class="deadline '+cls+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>'+msg+'</span></div>';
+}
+function onNlCause(){
+  var id=document.getElementById('nl-animal').value, a=animalsCache.filter(function(x){return x.id===id;})[0];
+  var cause=document.getElementById('nl-cause').value, box=document.getElementById('nl-cover');
+  var chk=coverageCheck(a?a.species:'',cause);
+  var pid=document.getElementById('nl-policy').value, p=policiesCache.filter(function(x){return x.id===pid;})[0];
+  var wp=waitingPeriodNote(p,document.getElementById('nl-date').value);
+  var html='';
+  if(chk.msg) html+='<div class="cover-alert '+(chk.level==='bad'?'bad':chk.level==='good'?'good':'warn')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>'+chk.msg+'</span></div>';
+  if(wp) html+='<div class="cover-alert '+(wp.level==='bad'?'bad':'warn')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>'+wp.msg+'</span></div>';
+  box.innerHTML=html;
+}
+function nextNlId(){ nlCounter++; return 'NL-'+String(nlCounter).padStart(4,'0'); }
+function saveNoticeOfLoss(){
+  var aid=document.getElementById('nl-animal').value, a=animalsCache.filter(function(x){return x.id===aid;})[0];
+  if(!a){ toast('Choose the animal that died.'); return; }
+  var d=document.getElementById('nl-date').value;
+  if(!d){ toast('Enter the date of death.'); return; }
+  var cause=document.getElementById('nl-cause').value.trim();
+  if(!cause){ toast('State the cause of death.'); return; }
+  var pid=document.getElementById('nl-policy').value, p=policiesCache.filter(function(x){return x.id===pid;})[0];
+  var rec={id:nextNlId(),account:session.id,createdAt:new Date().toISOString(),animalId:a.id,species:a.species,purpose:a.purpose,
+    idType:a.idType,idValue:a.idValue,marks:a.marks,policyId:pid,policyNo:p?p.policyNo:'',coverType:p?p.coverType:'',
+    sumInsured:p?p.sumInsured:'',deductible:p?p.deductible:'',dateOfDeath:d,headLost:document.getElementById('nl-count').value||1,
+    cause:cause,linkedReport:document.getElementById('nl-report').value,
+    assured:session.name,address:session.address||'',rsbsa:session.rsbsa||'',status:'generated'};
+  saveEnc('claims',rec).then(function(){ refreshCaches(); buildNoticeDoc(rec); });
+}
+function viewNotice(id){ loadEnc('claims').then(function(l){ var c=l.filter(function(x){return x.id===id;})[0]; if(c) buildNoticeDoc(c); }); }
+
+/* ===================== Document generation ===================== */
+function docShell(title,sub,inner,foot){
+  return '<div class="docpaper"><h3>'+title+'</h3><div class="dsub">'+sub+'</div>'+inner+(foot?'<div class="dfoot">'+foot+'</div>':'')+'</div>';
+}
+function drow(k,v){ return '<div class="drow"><div class="dk">'+k+'</div><div class="dv">'+htm(v)+'</div></div>'; }
+function showDoc(title,html,text){
+  lastDoc={title:title,html:html,text:text};
+  document.getElementById('docview-body').innerHTML=html;
+  document.getElementById('printdoc').innerHTML=html;
+  go('docview');
+}
+function copyDoc(){
+  var t=lastDoc.text||'';
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ toast('Copied. Paste it into SMS or email.'); },function(){ fallbackCopy(t); });
+  } else fallbackCopy(t);
+}
+function fallbackCopy(t){
+  var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast('Copied. Paste it into SMS or email.'); }
+  catch(e){ toast('Copy is unavailable here. Use Print instead.'); }
+  document.body.removeChild(ta);
+}
+function buildNoticeDoc(c){
+  var left=10-daysBetween(c.dateOfDeath,today());
+  var inner=
+    '<div class="dsec">The assured</div>'
+    +drow('Name of assured',c.assured)
+    +drow('Address',c.address||'Not specified')
+    +(c.rsbsa?drow('RSBSA number',c.rsbsa):'')
+    +'<div class="dsec">The policy</div>'
+    +drow('Policy number',c.policyNo||'Not recorded')
+    +drow('Type of cover',PCIC.covers[c.coverType]||'Not recorded')
+    +drow('Sum insured',peso(c.sumInsured))
+    +'<div class="dsec">The livestock insured</div>'
+    +drow('Species and purpose',c.species+', '+c.purpose)
+    +drow('Identification',c.idValue?(c.idType+' '+c.idValue):'None recorded')
+    +drow('Distinguishing marks',c.marks||'Not specified')
+    +drow('Head lost',c.headLost)
+    +'<div class="dsec">The loss</div>'
+    +drow('Date of occurrence of death',fmtDate(c.dateOfDeath))
+    +drow('Cause of death',c.cause)
+    +(c.linkedReport?drow('MIRIAD field report',c.linkedReport):'')
+    +drow('Notice reference',c.id)
+    +'<div class="signline"><div>Signature of assured over printed name</div><div>Date signed</div></div>';
+  var foot='Submit this Notice of Loss to your PCIC regional office within ten calendar days of the death of the insured animal. '
+    +'It may be delivered in person or sent by mail, fax, or email, and the official date of filing is the date of mailing, transmission, or receipt. '
+    +'Supporting claim documents follow within thirty calendar days. '
+    +'<b>'+(left<0?('The ten day window closed '+Math.abs(left)+' day'+(Math.abs(left)===1?'':'s')+' ago.'):('Days remaining in the ten day window: '+left+'.'))+'</b><br><br>'
+    +'Prepared in MIRIAD on '+fmtDate(today())+'. This is a working document to help the assured file on time. PCIC assesses every claim against the covered and excluded risks in the policy.';
+  var text='PCIC LIVESTOCK MORTALITY INSURANCE - NOTICE OF LOSS\n\n'
+    +'Name of assured: '+c.assured+'\nAddress: '+(c.address||'Not specified')+'\n'
+    +(c.rsbsa?'RSBSA number: '+c.rsbsa+'\n':'')
+    +'Policy number: '+(c.policyNo||'Not recorded')+'\n'
+    +'Livestock insured: '+c.species+', '+c.purpose+(c.idValue?', '+c.idType+' '+c.idValue:'')+'\n'
+    +'Head lost: '+c.headLost+'\n'
+    +'Cause of death: '+c.cause+'\n'
+    +'Date of occurrence of death: '+fmtDate(c.dateOfDeath)+'\n'
+    +'Notice reference: '+c.id+'\n\n'
+    +'Filed under the ten calendar day notice requirement for livestock mortality claims.\nPrepared in MIRIAD on '+fmtDate(today())+'.';
+  showDoc('Notice of Loss',docShell('PHILIPPINE CROP INSURANCE CORPORATION<br>LIVESTOCK MORTALITY INSURANCE',
+    'NOTICE OF LOSS &middot; '+c.id,inner,foot),text);
+}
+function genInventory(){
+  Promise.all([myAnimals(),myPolicies()]).then(function(r){
+    var animals=r[0],pols=r[1];
+    if(!animals.length){ toast('Add animals to your herd record first.'); return; }
+    var rows=animals.map(function(a){
+      var p=policyFor(a.id,pols), st=policyState(p), dm=dispMeta(a.disposition);
+      return '<tr><td>'+htm(a.species)+'</td><td>'+htm(a.purpose)+'</td><td>'+(a.count||1)+'</td><td>'+htm(a.idValue?(a.idType+' '+a.idValue):'None')+'</td>'
+        +'<td>'+ageLabel(a.dob)+'</td><td>'+(a.value?Number(a.value).toLocaleString('en-PH'):'')+'</td><td>'+dm.l+'</td>'
+        +'<td>'+(p?htm(p.policyNo):'None')+'</td><td>'+(p&&p.endDate?fmtDate(p.endDate):'')+'</td></tr>';
+    }).join('');
+    var inHerd=animals.filter(function(a){return a.disposition==='in_herd';});
+    var head=inHerd.reduce(function(s,a){return s+(a.count||1);},0);
+    var totalSI=pols.reduce(function(s,p){return s+(Number(p.sumInsured)||0);},0);
+    var inner='<div class="dsec">Assured</div>'+drow('Name',session.name)+drow('Address',session.address||'Not specified')
+      +(session.rsbsa?drow('RSBSA number',session.rsbsa):'')
+      +drow('Report date',fmtDate(today()))
+      +'<div class="dsec">Summary</div>'
+      +drow('Records in ledger',animals.length)+drow('Head currently in herd',head)
+      +drow('Policies recorded',pols.length)+drow('Total sum insured',peso(totalSI))
+      +'<div class="dsec">Livestock inventory</div>'
+      +'<table><thead><tr><th>Species</th><th>Purpose</th><th>Head</th><th>ID mark</th><th>Age</th><th>Value/head</th><th>Status</th><th>Policy</th><th>Expiry</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      +'<div class="signline"><div>Signature of assured over printed name</div><div>Date signed</div></div>';
+    var foot='Prepared in MIRIAD from the herd record on '+fmtDate(today())+'. '
+      +'Insurable age, head count limits, sums insured, and premium rates are set by PCIC and are subject to change. '
+      +'Use this as supporting inventory for an application or renewal, alongside the PCIC application form and a Veterinary Health Certificate where required.';
+    var text='LIVESTOCK INVENTORY AND COVERAGE REPORT\nAssured: '+session.name+'\nAddress: '+(session.address||'Not specified')
+      +'\nDate: '+fmtDate(today())+'\nRecords: '+animals.length+'\nHead in herd: '+head+'\nPolicies: '+pols.length+'\nTotal sum insured: '+peso(totalSI)
+      +'\n\n'+animals.map(function(a){ var p=policyFor(a.id,pols);
+        return '- '+a.species+' ('+a.purpose+'), '+(a.count||1)+' head, '+(a.idValue?a.idType+' '+a.idValue:'no mark')+', '+dispMeta(a.disposition).l+(p?', policy '+p.policyNo:''); }).join('\n')
+      +'\n\nPrepared in MIRIAD.';
+    showDoc('Inventory report',docShell('LIVESTOCK INVENTORY AND COVERAGE REPORT','Herd record &middot; '+fmtDate(today()),inner,foot),text);
+  });
+}
+function genChecklist(){
+  var inner='<div class="dsec">Step one, within ten calendar days</div>'
+    +'<ul><li>Notice of Loss stating the name of the assured, address, policy number, livestock insured, cause of death, and date of the occurrence of death. It may be sent by mail, fax, or email, or delivered in person.</li></ul>'
+    +'<div class="dsec">Step two, within thirty calendar days</div>'
+    +'<ol>'
+    +'<li>Claim for Indemnity or Loss Report, signed and accomplished by the assured. This is the formal claim.</li>'
+    +'<li>Veterinary Disease Report, accomplished and signed by the authorised veterinarian or the LGU livestock inspector or technician.</li>'
+    +'<li>Original Certificate of Ownership or Transfer of Large Cattle, or a certified machine copy of the Memorandum Receipt for government dispersed animals.</li>'
+    +'<li>Livestock Death Certificate.</li>'
+    +'<li>Necropsy or laboratory reports, if any were performed.</li>'
+    +'<li>Photographs of the dead animal clearly showing the identifying marks, whether eartag, earnotch, brand, or tattoo.</li>'
+    +'<li>Any other document PCIC requires, such as an affidavit of two disinterested parties.</li>'
+    +'</ol>'
+    +'<div class="dsec">For poultry claims instead</div>'
+    +'<ol><li>Weekly Loss Report.</li><li>Veterinary Report accomplished by the duly authorised veterinarian.</li>'
+    +'<li>Farm Management Chart or Daily Mortality Chart.</li><li>Photographs of the dead birds.</li><li>Proof of proceeds.</li></ol>'
+    +'<div class="dsec">After filing</div>'
+    +'<ul><li>PCIC settles a claim no later than forty five calendar days from receipt of the complete claim documents.</li>'
+    +'<li>The decision on settlement becomes final sixty calendar days after the indemnity is released or the notice of disapproval is sent.</li></ul>';
+  var foot='Prepared in MIRIAD on '+fmtDate(today())+' from the PCIC general information on the livestock mortality insurance programme. '
+    +'Requirements can change, so confirm the current list with your PCIC regional office.';
+  var text='PCIC LIVESTOCK MORTALITY CLAIM CHECKLIST\n\nWithin 10 calendar days: Notice of Loss (name of assured, address, policy number, livestock insured, cause of death, date of death).\n\n'
+    +'Within 30 calendar days:\n1. Claim for Indemnity or Loss Report\n2. Veterinary Disease Report\n3. Certificate of Ownership or Transfer of Large Cattle, or Memorandum Receipt\n4. Livestock Death Certificate\n5. Necropsy or laboratory reports if performed\n6. Photographs showing identifying marks\n7. Other documents PCIC requires\n\n'
+    +'Poultry: Weekly Loss Report, Veterinary Report, Farm Management or Daily Mortality Chart, photographs, proof of proceeds.\n\n'
+    +'Settlement within 45 calendar days of complete documents.\nPrepared in MIRIAD.';
+  showDoc('Claim checklist',docShell('PCIC LIVESTOCK MORTALITY CLAIM','Document checklist &middot; '+fmtDate(today()),inner,foot),text);
+}
+
+/* ===================== Registry, report, dashboard (officer) ===================== */
+function renderRegistry(){
+  Promise.all([loadEnc('premises'),loadEnc('reports')]).then(function(r){
+    var prems=r[0].slice().sort(function(a,b){ return a.name.localeCompare(b.name); }), reports=r[1];
+    var body=document.getElementById('registry-body');
+    if(!prems.length){ body.innerHTML='<div class="empty"><div class="et">No premises yet</div><div class="es">Tap Register a premises to add your first farm.</div></div>'; return; }
+    body.innerHTML='<div class="list">'+prems.map(function(p){
+      var zm=zoneMeta(p.zone), n=reports.filter(function(x){return x.premisesId===p.id;}).length;
+      return '<div class="row" onclick="openPremisesDetail(\''+p.id+'\')"><div class="lead l-pine">'+p.name.charAt(0).toUpperCase()+'</div>'
+        +'<div class="body"><div class="top"><span class="title">'+htm(p.name)+'</span><span class="tier '+zm.c+'">'+zm.t+'</span></div>'
+        +'<div class="meta"><span class="mono">'+p.id+'</span><span>'+(herdSummary(p.herds)||'No herds')+'</span><span>'+htm(p.barangay)+'</span>'+(n?'<span>'+n+' case'+(n===1?'':'s')+'</span>':'')+'</div></div><span class="chev">&rsaquo;</span></div>';
+    }).join('')+'</div>';
+  });
+}
+function openPremisesDetail(id){
+  Promise.all([loadEnc('premises'),loadEnc('reports')]).then(function(r){
+    var p=r[0].filter(function(x){return x.id===id;})[0]; if(!p) return;
+    var cases=r[1].filter(function(x){return x.premisesId===id;}).sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
+    var zm=zoneMeta(p.zone);
+    var herdChips=(p.herds||[]).map(function(h){ return '<div class="herdchip"><span class="hc">'+h.count+'</span> '+h.species+'</div>'; }).join('');
+    var caseHtml=cases.length===0
+      ? '<div class="empty" style="margin:2px 18px 6px"><div class="et">No cases logged</div><div class="es">This farm has a clean record so far.</div></div>'
+      : '<div class="list">'+cases.map(function(c){ var dc=diseaseClass(c.disease);
+          var pill=c.status==='synced'?'<span class="tier t-green">Synced</span>':'<span class="tier t-amber">Queued</span>';
+          return '<div class="row" onclick="toast(\''+c.id+' logged by '+esc(c.byName)+'.\')"><div class="lead l-'+dc+'">'+(c.disease==='Unclassified'?'?':c.disease)+'</div><div class="body"><div class="top"><span class="title">'+htm(c.species)+' \u00b7 '+htm(c.affected)+'</span>'+pill+'</div><div class="meta"><span class="mono">'+c.id+'</span><span>'+htm(c.byName)+'</span><span>'+timeAgo(c.createdAt)+'</span></div></div><span class="chev">&rsaquo;</span></div>'; }).join('')+'</div>';
+    document.getElementById('premises-detail-body').innerHTML=
+      '<div class="profile"><div class="ptop"><div><div class="pname">'+htm(p.name)+'</div><div class="pid">'+p.id+'</div></div><span class="zone-pill '+zm.c+'">'+zm.t+'</span></div>'
+      +'<div class="kv"><span class="k">Owner or caretaker</span><span class="v">'+htm(p.owner)+'</span></div>'
+      +'<div class="kv"><span class="k">Barangay</span><span class="v">'+htm(p.barangay)+'</span></div>'
+      +'<div class="kv"><span class="k">Coordinates</span><span class="v mono">'+p.coord+'</span></div>'
+      +'<div class="kv"><span class="k">Total cases</span><span class="v">'+cases.length+'</span></div></div>'
+      +'<div class="subhead">Animals kept</div><div class="herdchip-row">'+(herdChips||'<div class="herdchip">None recorded</div>')+'</div>'
+      +'<div style="padding:8px 18px 6px"><button class="primary danger" onclick="reportForFarm(\''+p.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Report a case for this farm</button></div>'
+      +'<div class="subhead">Case history</div>'+caseHtml;
+    go('premises-detail');
+  });
+}
+function reportForFarm(id){ preselectFarm=id; go('report'); }
+function speciesOptions(sel){ return SPECIES_LIST.map(function(s){ return '<option'+(s===sel?' selected':'')+'>'+s+'</option>'; }).join(''); }
+function renderHerdRows(){
+  var box=document.getElementById('herd-rows'); box.innerHTML='';
+  formHerds.forEach(function(h,i){
+    var row=document.createElement('div'); row.className='herd-row';
+    row.innerHTML='<select class="txt" onchange="herdEdit('+i+',\'species\',this.value)">'+speciesOptions(h.species)+'</select>'
+      +'<input class="txt" type="number" inputmode="numeric" placeholder="Count" value="'+(h.count||'')+'" onchange="herdEdit('+i+',\'count\',this.value)">'
+      +(formHerds.length>1?'<button class="rm" onclick="removeHerdRow('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>':'');
+    box.appendChild(row);
+  });
+}
+function herdEdit(i,k,v){ if(formHerds[i]) formHerds[i][k]=v; }
+function addHerdRow(){ formHerds.push({species:'Swine',count:''}); renderHerdRows(); }
+function removeHerdRow(i){ formHerds.splice(i,1); renderHerdRows(); }
+function openPremisesForm(){ formHerds=[{species:'Swine',count:''}];
+  ['pf-name','pf-owner','pf-brgy'].forEach(function(id){ document.getElementById(id).value=''; });
+  renderHerdRows(); go('premises-form'); }
+function nextPremId(){ premCounter++; return 'PRM-'+String(premCounter).padStart(5,'0'); }
+function savePremises(){
+  var name=document.getElementById('pf-name').value.trim();
+  if(!name){ toast('Give the farm a name first.'); return; }
+  var herds=formHerds.filter(function(h){ return h.count&&parseInt(h.count,10)>0; }).map(function(h){ return {species:h.species,count:parseInt(h.count,10)}; });
+  var rec={id:nextPremId(),name:name,owner:document.getElementById('pf-owner').value.trim()||'Not specified',
+    barangay:document.getElementById('pf-brgy').value.trim()||'Not specified',coord:'14.6772, 121.0451',zone:'clear',
+    ownerAccount:null,herds:herds,createdAt:new Date().toISOString(),addedBy:session.name};
+  saveEnc('premises',rec).then(function(){ refreshCaches(); toast(rec.name+' registered.'); go('registry'); });
+}
+function populateFarmSelect(){
+  loadEnc('premises').then(function(list){
+    premisesCache=list;
+    var sel=document.getElementById('rep-farm'); sel.innerHTML='';
+    if(session.role==='raiser'){
+      var mine=myFarm(list);
+      if(mine){ var o=document.createElement('option'); o.value=mine.id; o.textContent='My farm: '+mine.name; sel.appendChild(o); }
+      var u=document.createElement('option'); u.value='unlisted'; u.textContent='Somewhere else'; sel.appendChild(u);
+      if(preselectFarm){ sel.value=preselectFarm; preselectFarm=null; }
+      return;
+    }
+    var ph=document.createElement('option'); ph.value=''; ph.textContent='Select a farm'; sel.appendChild(ph);
+    list.sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(p){
+      var o=document.createElement('option'); o.value=p.id; o.textContent=p.name+' ('+p.barangay+')'; sel.appendChild(o); });
+    var u2=document.createElement('option'); u2.value='unlisted'; u2.textContent='Unlisted or new location'; sel.appendChild(u2);
+    if(preselectFarm){ sel.value=preselectFarm; preselectFarm=null; }
+  });
+}
+function pickSpecies(el){ el.parentElement.querySelectorAll('.seg').forEach(function(s){s.classList.remove('sel')}); el.classList.add('sel'); previewDisease(); }
+function chk(el){ el.classList.toggle('on'); }
+function togglePhoto(){ photoAttached=!photoAttached; document.getElementById('photo').classList.toggle('has',photoAttached);
+  set('photo-t',photoAttached?'Photo attached':'Take or attach photo'); set('photo-s',photoAttached?'Geotagged and ready to send':'Location is added automatically'); }
+function selectedSpecies(){ var s=document.querySelector('#species-row .seg.sel'); return s?s.getAttribute('data-val'):''; }
+function selectedSigns(){ var o=[]; document.querySelectorAll('#signs .check.on').forEach(function(c){ o.push(c.getAttribute('data-sign')); }); return o; }
+function classify(sp,sg){
+  function has(s){ return sg.indexOf(s)>=0; }
+  if(sp==='Swine'&&(has('Sudden deaths')||has('High fever, weakness'))) return 'ASF';
+  if(sp==='Poultry'&&(has('Sudden deaths')||has('High fever, weakness'))) return 'AI';
+  if(sp==='Cattle'&&has('Skin blotches or sores')) return 'LSD';
+  if((sp==='Cattle'||sp==='Swine')&&has('Drooling or lameness')) return 'FMD';
+  return 'Unclassified';
+}
+function previewDisease(){
+  var sp=selectedSpecies(),sg=selectedSigns(),flag=document.getElementById('disease-flag');
+  if(sp&&sg.length){
+    var d=classify(sp,sg); if(d==='Unclassified'){ flag.classList.remove('show'); return; }
+    var zoo=ZOONOTIC[d]?' This one can affect people, so it is flagged for One Health follow-up.':'';
+    flag.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span>Signs point toward <b>'+d+'</b>. Officers will confirm with lab tests.'+zoo+'</span>';
+    flag.classList.add('show');
+  } else flag.classList.remove('show');
+}
+function nextId(){ caseCounter++; return 'CASE-'+String(caseCounter).padStart(4,'0'); }
+function submitReport(){
+  var fv=document.getElementById('rep-farm').value;
+  if(fv===''){ toast('Choose which farm this report is about.'); return; }
+  var sp=selectedSpecies(),sg=selectedSigns();
+  if(!sp){ toast('Pick the kind of animal first.'); return; }
+  if(!sg.length){ toast('Tick at least one sign you are seeing.'); return; }
+  var farm=fv==='unlisted'?null:premisesCache.filter(function(p){return p.id===fv;})[0];
+  var rec={id:nextId(),createdAt:new Date().toISOString(),species:sp,signs:sg,
+    affected:document.getElementById('rep-affected').value.trim()||'Not specified',
+    hasPhoto:photoAttached,coord:document.getElementById('geo-coord').textContent,
+    disease:classify(sp,sg),status:'queued',premisesId:farm?farm.id:null,
+    premisesName:farm?farm.name:'Unlisted location',barangay:farm?farm.barangay:'',
+    byAccount:session.id,byName:session.name,byRole:session.role,byOffice:session.office||''};
+  saveEnc('reports',rec).then(function(){
+    resetForm(); refreshCaches();
+    toast(session.role==='raiser'?'Report saved and encrypted on this device.':rec.id+' saved to the case register.');
+    go('reports');
+  });
+}
+function resetForm(){
+  document.querySelectorAll('#species-row .seg').forEach(function(s,i){ s.classList.toggle('sel',i===0); });
+  document.querySelectorAll('#signs .check').forEach(function(c){ c.classList.remove('on'); });
+  document.getElementById('rep-affected').value='';
+  photoAttached=false; document.getElementById('photo').classList.remove('has');
+  set('photo-t','Take or attach photo'); set('photo-s','Location is added automatically');
+  document.getElementById('disease-flag').classList.remove('show');
+}
+function renderReports(){
+  visibleReports().then(function(list){
+    list.sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
+    var body=document.getElementById('reports-body'), queued=list.filter(function(r){return r.status==='queued'}).length;
+    document.getElementById('sync-btn').disabled=queued===0;
+    if(!list.length){ body.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l4 4v14H5V3z"/><path d="M8 12h8M8 16h5"/></svg><div class="et">No reports yet</div><div class="es">Tap Report to log your first case.</div></div>'; return; }
+    body.innerHTML='<div class="list">'+list.map(function(r){
+      var dc=diseaseClass(r.disease), pill=r.status==='synced'?'<span class="tier t-green">Synced</span>':'<span class="tier t-amber">Queued</span>';
+      var who=session.role==='officer'?'<span>'+htm(r.byName)+'</span>':'';
+      return '<div class="row" onclick="toast(\''+r.id+' \\u00b7 '+esc(r.premisesName)+'.\')"><div class="lead l-'+dc+'">'+(r.disease==='Unclassified'?'?':r.disease)+'</div><div class="body"><div class="top"><span class="title">'+htm(r.species)+' \u00b7 '+htm(r.affected)+'</span>'+pill+'</div><div class="meta"><span class="mono">'+r.id+'</span><span>'+htm(r.premisesName)+'</span>'+who+'<span>'+timeAgo(r.createdAt)+'</span></div></div><span class="chev">&rsaquo;</span></div>';
+    }).join('')+'</div>';
+  });
+}
+function syncNow(){
+  loadEnc('reports').then(function(list){
+    var q=list.filter(function(r){return r.status==='queued'});
+    return Promise.all(q.map(function(r){ r.status='synced'; r.syncedAt=new Date().toISOString(); return saveEnc('reports',r); })).then(function(){ return q.length; });
+  }).then(function(n){ refreshCaches(); renderReports();
+    toast(n>0?('Synced '+n+' report'+(n===1?'':'s')+'. Simulated for this prototype.'):'Nothing to sync.'); });
+}
+function renderDashboard(){
+  Promise.all([loadEnc('reports'),loadEnc('premises')]).then(function(r){
+    var reports=r[0].slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
+    var queued=reports.filter(function(x){return x.status==='queued'}).length;
+    var cases=142+reports.length, pct=Math.round(((cases-queued)/cases)*100);
+    document.getElementById('kpis').innerHTML=
+      kpi('7','Active outbreaks','up','&#9650; 2 this week')+
+      kpi(String(cases),'Cases reported','up','&#9650; '+(18+reports.length)+' this week')+
+      kpi(String(r[1].length),'Premises tracked','','registered farms')+
+      kpi(pct+'%','Reports synced','down',(queued?queued+' pending':'all clear'));
+    var att=document.getElementById('attention');
+    att.innerHTML=reports.length
+      ? reports.slice(0,4).map(function(x){ var dc=diseaseClass(x.disease);
+          var pill=x.status==='queued'?'<span class="tier t-amber">Queued</span>':'<span class="tier t-blue">Suspect</span>';
+          return '<div class="row" onclick="'+(x.premisesId?'openPremisesDetail(\''+x.premisesId+'\')':'toast(\'This case has no linked farm.\')')+'"><div class="lead l-'+dc+'">'+(x.disease==='Unclassified'?'?':x.disease)+'</div><div class="body"><div class="top"><span class="title">'+htm(x.species)+' \u00b7 '+htm(x.affected)+'</span>'+pill+'</div><div class="meta"><span class="mono">'+x.id+'</span><span>'+htm(x.premisesName)+'</span><span>'+htm(x.byName)+'</span><span>'+timeAgo(x.createdAt)+'</span></div></div><span class="chev">&rsaquo;</span></div>'; }).join('')
+      : '<div class="empty" style="margin:2px 18px"><div class="et">Nothing pending</div><div class="es">Cases logged on this device appear here.</div></div>';
+  });
+}
+function kpi(n,l,dir,delta){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div><div class="delta '+(dir||'')+'">'+delta+'</div></div>'; }
+
+/* ===================== Caches ===================== */
+function refreshCaches(){
+  if(!session) return;
+  Promise.all([loadEnc('reports'),loadEnc('premises'),loadEnc('animals'),loadEnc('policies'),loadEnc('claims')]).then(function(r){
+    premisesCache=r[1];
+    animalsCache=r[2].filter(function(a){return a.account===session.id;});
+    policiesCache=r[3].filter(function(p){return p.account===session.id;});
+    var mine=session.role==='officer'?r[0]:r[0].filter(function(x){return x.byAccount===session.id;});
+    var queued=r[0].filter(function(x){return x.status==='queued'}).length;
+    document.getElementById('q').textContent=queued===0?'All synced':(queued+' queued');
+    document.getElementById('saved-cnt').textContent=mine.length;
+    r[0].forEach(function(x){ var n=parseInt((x.id||'').replace('CASE-',''),10); if(!isNaN(n)&&n>=caseCounter) caseCounter=n; });
+    r[1].forEach(function(p){ var n=parseInt((p.id||'').replace('PRM-',''),10); if(!isNaN(n)&&n>=premCounter) premCounter=n; });
+    r[2].forEach(function(a){ var n=parseInt((a.id||'').replace('ANM-',''),10); if(!isNaN(n)&&n>=animCounter) animCounter=n; });
+    r[3].forEach(function(p){ var n=parseInt((p.id||'').replace('POL-',''),10); if(!isNaN(n)&&n>=polCounter) polCounter=n; });
+    r[4].forEach(function(c){ var n=parseInt((c.id||'').replace('NL-',''),10); if(!isNaN(n)&&n>=nlCounter) nlCounter=n; });
+  });
+}
+
+/* ===================== Misc ===================== */
+var tt;
+function toast(msg){ document.getElementById('toast-msg').textContent=msg; var t=document.getElementById('toast'); t.classList.add('show'); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove('show')},3600); }
+(function(){ var data=[3,5,4,8,7,11,9,14,12,10,15,13,17,14],max=17,c=document.getElementById('curve');
+  data.forEach(function(v,i){ var b=document.createElement('div'); b.className='b'+(i%2===1?' q':''); b.style.height=Math.round((v/max)*100)+'%'; c.appendChild(b); }); })();
+
+['sr-btn','so-btn','lk-btn'].forEach(function(id){ var b=document.getElementById(id); if(b) BTN_HTML[id]=b.innerHTML; });
+DB.ready.then(function(){ return DB.all('accounts'); }).then(function(list){
+  if(!list.length){ go('welcome'); return; }
+  if(list.length===1){ showLock(list[0]); return; }
+  renderAccountPicker(list); go('accounts');
+});
+</script>
+</body>
+</html>
